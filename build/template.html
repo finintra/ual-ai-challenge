@@ -7,9 +7,29 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=Inter+Tight:wght@300..800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<script>
+  // Set the theme BEFORE styles apply, to avoid a flash of the wrong theme.
+  // Priority: saved preference > system preference > "light" (default).
+  (function() {
+    try {
+      var saved = localStorage.getItem('theme');
+      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var theme = saved || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
 <style>__STYLES__</style>
 </head>
 <body>
+
+<!-- Theme toggle — always visible, works on both login and app -->
+<div class="theme-toggle" id="themeToggle" role="group" aria-label="Тема">
+  <button class="theme-toggle__btn" data-set-theme="light" aria-pressed="false" title="Світло">Світло</button>
+  <button class="theme-toggle__btn" data-set-theme="dark"  aria-pressed="false" title="Темно">Темно</button>
+</div>
 
 <!-- Login screen -->
 <div id="login" class="login">

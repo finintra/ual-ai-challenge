@@ -11,6 +11,25 @@
     && !SUPABASE_URL.startsWith('__') && !SUPABASE_ANON_KEY.startsWith('__'));
 
   // ===========================================================
+  // Theme toggle — initial value already applied in <head> to avoid FOUC.
+  // Here we just wire up the buttons and persist user choice.
+  // ===========================================================
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('theme', t); } catch (e) {}
+    syncThemeToggle(t);
+  }
+  function syncThemeToggle(t) {
+    document.querySelectorAll('.theme-toggle__btn').forEach(function(btn) {
+      btn.setAttribute('aria-pressed', btn.dataset.setTheme === t ? 'true' : 'false');
+    });
+  }
+  document.querySelectorAll('.theme-toggle__btn').forEach(function(btn) {
+    btn.addEventListener('click', function() { setTheme(btn.dataset.setTheme); });
+  });
+  syncThemeToggle(document.documentElement.getAttribute('data-theme') || 'light');
+
+  // ===========================================================
   // Encrypted data is embedded in <script id="encrypted-data">
   // Structure: { pages, encrypted, master_codes }
   // ===========================================================

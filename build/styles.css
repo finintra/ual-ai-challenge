@@ -7,44 +7,63 @@
    ========================================================= */
 
 :root {
-  /* Paper accents (used on accent surfaces and in the legacy gradient blobs) */
-  --paper:           #F4EFE5;
-  --paper-warm:      #ECE5D3;
+  /* ---- Theme-invariant tokens ---- */
+  --coral:           #FF5A3D;     /* primary accent works on both themes */
+  --coral-deep:      #D63D20;     /* hover / pressed states */
+  --on-coral:        #14100E;     /* text color when bg = coral (deep ink always reads well) */
 
-  /* Ink base palette */
-  --ink-base:        #14100E;      /* page background */
-  --ink-surface:     #1B1612;      /* sidebar / cards */
-  --ink-elev:        #221C17;      /* elevated surface (hero, code, pills) */
-  --ink-elev-2:      #2A2319;      /* even higher (best-practices) */
-
-  /* Text */
-  --text:            #F4EFE5;
-  --text-muted:      #9C927F;
-  --text-faint:      #645B4F;
-
-  /* Hairlines */
-  --rule:            rgba(244, 239, 229, 0.10);
-  --rule-strong:     rgba(244, 239, 229, 0.22);
-
-  /* Accents */
-  --coral:           #FF5A3D;
-  --coral-deep:      #D63D20;
-  --coral-soft:      rgba(255, 90, 61, 0.14);
-  --gold:            #F5C24A;
-  --gold-soft:       rgba(245, 194, 74, 0.12);
-
-  /* Type stacks */
   --font-display: "Fraunces", Georgia, "Iowan Old Style", serif;
   --font-body:    "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  /* Layout */
   --sidebar-w:    280px;
   --content-max:  760px;
+
+  /* ---- LIGHT theme (default) ---- */
+  --ink-base:        #F4EFE5;     /* page background — warm paper */
+  --ink-surface:     #ECE5D3;     /* sidebar / cards */
+  --ink-elev:        #FAF6EC;     /* elevated surface (hero, code, prompt-cards) */
+  --ink-elev-2:      #FFFFFF;     /* highest */
+
+  --text:            #1A1614;
+  --text-muted:      #6E6557;
+  --text-faint:      #B0A593;
+
+  --rule:            rgba(26, 22, 20, 0.10);
+  --rule-strong:     rgba(26, 22, 20, 0.22);
+
+  --coral-soft:      rgba(255, 90, 61, 0.10);
+  --gold:            #B89020;     /* deeper gold reads on cream */
+  --gold-soft:       rgba(184, 144, 32, 0.14);
+
+  /* Login gradient blob opacities — tuned per theme */
+  --blob-coral-opacity: 0.22;
+  --blob-gold-opacity:  0.18;
+}
+
+:root[data-theme="dark"] {
+  --ink-base:        #14100E;
+  --ink-surface:     #1B1612;
+  --ink-elev:        #221C17;
+  --ink-elev-2:      #2A2319;
+
+  --text:            #F4EFE5;
+  --text-muted:      #9C927F;
+  --text-faint:      #645B4F;
+
+  --rule:            rgba(244, 239, 229, 0.10);
+  --rule-strong:     rgba(244, 239, 229, 0.22);
+
+  --coral-soft:      rgba(255, 90, 61, 0.14);
+  --gold:            #F5C24A;     /* brighter gold for dark base */
+  --gold-soft:       rgba(245, 194, 74, 0.12);
+
+  --blob-coral-opacity: 0.35;
+  --blob-gold-opacity:  0.18;
 }
 
 * { box-sizing: border-box; }
-*::selection { background: var(--coral); color: var(--ink-base); }
+*::selection { background: var(--coral); color: var(--on-coral); }
 
 html, body {
   margin: 0;
@@ -74,17 +93,13 @@ html, body {
   justify-content: center;
   padding: 24px;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 20% 100%, rgba(255, 90, 61, 0.07) 0%, transparent 40%),
-    radial-gradient(circle at 100% 0%, rgba(245, 194, 74, 0.05) 0%, transparent 45%),
-    var(--ink-base);
+  background: var(--ink-base);
 }
 
 .login__bg-blob {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
-  opacity: 0.55;
   pointer-events: none;
   z-index: 0;
 }
@@ -95,7 +110,7 @@ html, body {
   width: 460px;
   height: 460px;
   background: radial-gradient(circle, var(--coral) 0%, transparent 70%);
-  opacity: 0.35;
+  opacity: var(--blob-coral-opacity);
 }
 
 .login__bg-blob--gold {
@@ -104,7 +119,7 @@ html, body {
   width: 560px;
   height: 560px;
   background: radial-gradient(circle, var(--gold) 0%, transparent 70%);
-  opacity: 0.18;
+  opacity: var(--blob-gold-opacity);
 }
 
 .login__card {
@@ -192,7 +207,7 @@ html, body {
   letter-spacing: 0.24em;
   text-transform: uppercase;
   background: var(--coral);
-  color: var(--ink-base);
+  color: var(--on-coral);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -600,7 +615,7 @@ html, body {
   letter-spacing: 0.24em;
   text-transform: uppercase;
   background: var(--coral);
-  color: var(--ink-base);
+  color: var(--on-coral);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -917,6 +932,7 @@ html, body {
 .content a:hover { text-decoration-color: var(--coral); }
 
 /* =========================================================
+<<<<<<< HEAD
    STUDENT PICKER (after login, before app)
    ========================================================= */
 .picker {
@@ -1567,9 +1583,53 @@ html, body {
 }
 
 /* =========================================================
+   THEME TOGGLE (fixed top-right, present on login + app)
+   ========================================================= */
+.theme-toggle {
+  position: fixed;
+  top: 16px;
+  right: 18px;
+  z-index: 100;
+  display: inline-flex;
+  background: var(--ink-surface);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.theme-toggle__btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+
+.theme-toggle__btn:hover { color: var(--text); }
+
+.theme-toggle__btn[aria-pressed="true"] {
+  background: var(--coral);
+  color: var(--on-coral);
+}
+
+/* =========================================================
    MOBILE
    ========================================================= */
 @media (max-width: 880px) {
+  .theme-toggle { top: 10px; right: 10px; font-size: 9px; }
+  .theme-toggle__btn { padding: 5px 10px; }
+
   .app { grid-template-columns: 1fr; }
 
   .sidebar {
