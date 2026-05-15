@@ -178,6 +178,92 @@ def day_hero_html(page_id, label, total_days=7):
     )
 
 
+# Day-page block grouping. Each H3 in the rendered HTML is mapped to a block;
+# consecutive H3s in the same block share one wrapper. The "checkpoint" block
+# is special — it starts at the first <form class="checkin"> or
+# <div class="completion-code"> in the rendered HTML.
+DAY_BLOCKS = [
+    ("intro",     "Вступ",       ["Сцена"]),
+    ("task",      "Завдання",    ["Головна задача дня"]),
+    ("theory",    "Теорія",      ["Лекційна частина"]),
+    ("practice",  "Практика",    ["Місія", "Факультативні задачі", "Арсенал", "Покрокова інструкція і шаблони"]),
+    ("artifacts", "Артефакти",   ["Здобутки дня"]),
+    ("schedule",  "Розклад дня", ["Розподіл часу"]),
+    ("advice",    "Поради",      ["Пастки і поради"]),
+    ("debrief",   "Debrief",     ["Debrief", "Debrief (мета-рівень за всі 7 днів)", "Debrief (мета-рівень за всі 8 днів)"]),
+    ("checkpoint", "CheckPoint", []),  # special: triggered by checkin form / completion-code
+]
+
+
+def wrap_day_blocks(html, page_id):
+    """Wrap day-page H3 sections into navigable blocks. Returns (html, present_blocks)."""
+    if not page_id.startswith("day-"):
+        return html, []
+
+    h3_to_block = {}
+    for bid, _, h3s in DAY_BLOCKS:
+        for h in h3s:
+            h3_to_block[h] = bid
+
+    breaks = []
+    h3_pattern = re.compile(r'<h3[^>]*>([^<]+)</h3>')
+    for m in h3_pattern.finditer(html):
+        h3_text = m.group(1).strip()
+        if h3_text in h3_to_block:
+            breaks.append((m.start(), h3_to_block[h3_text]))
+
+    # CheckPoint block starts at the earliest checkin form or completion-code wrapper
+    cp_pos = None
+    for pat in (r'<form class="checkin"', r'<div class="completion-code"'):
+        m = re.search(pat, html)
+        if m and (cp_pos is None or m.start() < cp_pos):
+            cp_pos = m.start()
+    if cp_pos is not None:
+        breaks.append((cp_pos, "checkpoint"))
+
+    if not breaks:
+        return html, []
+
+    breaks.sort(key=lambda x: x[0])
+
+    present_blocks = []
+    seen = set()
+    for _, bid in breaks:
+        if bid not in seen:
+            present_blocks.append(bid)
+            seen.add(bid)
+
+    out = [html[:breaks[0][0]]]
+    current_block = None
+    for i, (pos, bid) in enumerate(breaks):
+        end_pos = breaks[i + 1][0] if i + 1 < len(breaks) else len(html)
+        chunk = html[pos:end_pos]
+        if bid != current_block:
+            if current_block is not None:
+                out.append('</section>')
+            out.append(f'<section id="block-{bid}" class="day-block day-block--{bid}">')
+            current_block = bid
+        out.append(chunk)
+    if current_block is not None:
+        out.append('</section>')
+
+    return "".join(out), present_blocks
+
+
+def render_day_nav(present_blocks):
+    """Build sticky horizontal nav for day-page blocks."""
+    if not present_blocks:
+        return ""
+    label_by_id = {bid: lbl for bid, lbl, _ in DAY_BLOCKS}
+    items = []
+    for bid in present_blocks:
+        label = label_by_id.get(bid, bid)
+        items.append(
+            f'<a href="#block-{bid}" class="day-nav__item" data-target="block-{bid}">{label}</a>'
+        )
+    return f'<nav class="day-nav" aria-label="Навігація по дню">{"".join(items)}</nav>'
+
+
 def html_escape(s):
     return (
         s.replace("&", "&amp;")
@@ -385,12 +471,17 @@ def main():
         if page_id in SUBMISSIONS:
             html = wrap_completion_section(html, page_id)
 
+        # Group day-page H3 sections into navigable blocks, then build sticky nav.
+        html, present_blocks = wrap_day_blocks(html, page_id)
+        nav_html = render_day_nav(present_blocks)
+
         # Inject the magazine-issue hero card at the top of every day page.
         # Replaces the first <h1> so we don't render a duplicate title.
         hero = day_hero_html(page_id, label)
         if hero:
-            html_with_hero, n_subs = re.subn(r"<h1>.*?</h1>", hero, html, count=1)
-            html = html_with_hero if n_subs else hero + html
+            head = hero + nav_html
+            html_with_hero, n_subs = re.subn(r"<h1>.*?</h1>", head, html, count=1)
+            html = html_with_hero if n_subs else head + html
         password = passwords.get(pw_key)
         if not password:
             print(f"  ⚠ no password for key '{pw_key}', skipping {fname}")

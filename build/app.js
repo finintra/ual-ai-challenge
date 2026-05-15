@@ -396,6 +396,9 @@
     }
     contentEl.innerHTML = html;
 
+    // Highlight active day-nav item as user scrolls between blocks
+    wireDayNav(contentEl);
+
     // Wire up checkin form if present
     const form = contentEl.querySelector('form.checkin');
     if (form) wireCheckinForm(form);
@@ -415,6 +418,45 @@
       const slot = contentEl.querySelector('#supervisor-dashboard');
       if (slot) renderSupervisorDashboard(slot);
     }
+  }
+
+  let dayNavObserver = null;
+  function wireDayNav(root) {
+    if (dayNavObserver) { dayNavObserver.disconnect(); dayNavObserver = null; }
+    const nav = root.querySelector('.day-nav');
+    if (!nav) return;
+    const items = Array.from(nav.querySelectorAll('.day-nav__item'));
+    if (!items.length) return;
+    const blocks = items
+      .map(it => document.getElementById(it.dataset.target))
+      .filter(Boolean);
+    if (!blocks.length) return;
+
+    // Smooth scroll with sticky-nav offset
+    items.forEach(it => {
+      it.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tgt = document.getElementById(it.dataset.target);
+        if (!tgt) return;
+        const rect = tgt.getBoundingClientRect();
+        const top = window.scrollY + rect.top - 16;
+        window.scrollTo({ top, behavior: 'smooth' });
+        history.replaceState(null, '', '#' + it.dataset.target);
+      });
+    });
+
+    const setActive = (id) => {
+      items.forEach(it => it.classList.toggle('is-active', it.dataset.target === id));
+    };
+    setActive(blocks[0].id);
+
+    dayNavObserver = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter(e => e.isIntersecting)
+        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (visible[0]) setActive(visible[0].target.id);
+    }, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
+    blocks.forEach(b => dayNavObserver.observe(b));
   }
 
   function showUnlockPanel(pageId) {
