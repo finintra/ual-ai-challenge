@@ -33,18 +33,20 @@ DIST = ROOT / "dist"
 PASSWORDS_FILE = ROOT / "passwords.json"
 # ============================================================
 
-# Page definitions: (id, filename, label, password_key, locked_by_default)
+# Page definitions: (id, filename, label, password_key, locked_by_default, next_code_key)
+# next_code_key — passwords.json key whose value substitutes {{UNLOCK_CODE}}
+# in this page's markdown. None = no substitution.
 PAGES = [
-    ("overview",   "overview.md",   "Огляд челенджу",        "main",       False),
-    ("day-1",      "day-1.md",      "День 1 · Дослідження",  "main",       False),
-    ("day-2",      "day-2.md",      "День 2 · Бренд",        "day-2",      True),
-    ("day-3",      "day-3.md",      "День 3 · Сайт",         "day-3",      True),
-    ("day-4",      "day-4.md",      "День 4 · Соцмережі",    "day-4",      True),
-    ("day-5",      "day-5.md",      "День 5 · AI-медіа",     "day-5",      True),
-    ("day-6",      "day-6.md",      "День 6 · Автоматизація","day-6",      True),
-    ("day-7",      "day-7.md",      "День 7 · Пітч",         "day-7",      True),
-    ("journal",    "journal.md",    "Бортовий журнал",       "main",       False),
-    ("supervisor", "supervisor.md", "Керівник",              "supervisor", True),
+    ("overview",   "overview.md",   "Огляд челенджу",        "main",       False, None),
+    ("day-1",      "day-1.md",      "День 1 · Дослідження",  "main",       False, "day-2"),
+    ("day-2",      "day-2.md",      "День 2 · Бренд",        "day-2",      True,  "day-3"),
+    ("day-3",      "day-3.md",      "День 3 · Сайт",         "day-3",      True,  "day-4"),
+    ("day-4",      "day-4.md",      "День 4 · Соцмережі",    "day-4",      True,  "day-5"),
+    ("day-5",      "day-5.md",      "День 5 · AI-медіа",     "day-5",      True,  "day-6"),
+    ("day-6",      "day-6.md",      "День 6 · Автоматизація","day-6",      True,  "day-7"),
+    ("day-7",      "day-7.md",      "День 7 · Пітч",         "day-7",      True,  "completion"),
+    ("journal",    "journal.md",    "Бортовий журнал",       "main",       False, None),
+    ("supervisor", "supervisor.md", "Керівник",              "supervisor", True,  None),
 ]
 
 
@@ -161,12 +163,25 @@ def main():
     pages_list = []
 
     print("Building encrypted content:")
-    for page_id, fname, label, pw_key, locked in PAGES:
+    for page_id, fname, label, pw_key, locked, next_code_key in PAGES:
         path = CONTENT / fname
         if not path.exists():
             print(f"  ⚠ missing: {fname} (skipping)")
             continue
         md_text = path.read_text(encoding="utf-8")
+        # Generic {{CODE:<key>}} substitution — used by supervisor.md and any
+        # page that needs to render an arbitrary password from passwords.json.
+        for k, v in passwords.items():
+            md_text = md_text.replace("{{CODE:" + k + "}}", v)
+        # Page-specific {{UNLOCK_CODE}} → the code that unlocks the next page
+        # in the quest chain (defined by PAGES[…].next_code_key).
+        if next_code_key:
+            next_code = passwords.get(next_code_key)
+            if not next_code:
+                print(f"  ⚠ no password for '{next_code_key}' (needed by {fname}); "
+                      f"leaving {{{{UNLOCK_CODE}}}} unresolved")
+            else:
+                md_text = md_text.replace("{{UNLOCK_CODE}}", next_code)
         html = md_to_html(md_text)
         password = passwords.get(pw_key)
         if not password:

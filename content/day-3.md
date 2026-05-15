@@ -365,6 +365,6 @@ After scaffolding, show the file structure and ask which section to build first.
 
 Ти налаштував **компас**. Твоя присутність у мережі є.
 
-Код для розблокування Дня 4: **`KOMPAS`**
+Код для розблокування Дня 4: **`{{UNLOCK_CODE}}`**
 
 Введи його у бічну панель біля Дня 4.
