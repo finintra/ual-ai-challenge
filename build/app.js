@@ -7,6 +7,7 @@
   const SUPABASE_URL = '__SUPABASE_URL__';
   const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
   const STUDENTS = __STUDENTS_JSON__;
+  const SUBMISSION_SCHEMAS = __SUBMISSION_SCHEMAS__;
   const SUPABASE_READY = !!(SUPABASE_URL && SUPABASE_ANON_KEY
     && !SUPABASE_URL.startsWith('__') && !SUPABASE_ANON_KEY.startsWith('__'));
 
@@ -622,18 +623,20 @@
       const url = `${SUPABASE_URL}/rest/v1/submissions`
         + `?student_slug=eq.${encodeURIComponent(studentSlug)}`
         + `&day_id=eq.${encodeURIComponent(dayId)}`
-        + `&select=payload,updated_at`;
+        + `&select=payload,updated_at,review_notes,review_status,reviewed_at`;
       const res = await fetch(url, {
         headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
       });
       if (!res.ok) return;
       const rows = await res.json();
       if (!rows.length) return;
-      const payload = rows[0].payload || {};
+      const row = rows[0];
+      const payload = row.payload || {};
       Object.entries(payload).forEach(([k, v]) => {
         const input = form.querySelector(`[name="${CSS.escape(k)}"]`);
         if (input) input.value = v;
       });
+      renderReviewFeedback(form, row);
       if (!submittedDays.includes(dayId)) {
         submittedDays.push(dayId);
         persistState();
@@ -646,9 +649,88 @@
     } catch (e) { /* ignore — best-effort */ }
   }
 
+  // Show supervisor feedback inside the student's submitted form:
+  //  - banner on top with overall status + general note
+  //  - per-field comment block under each field input
+  function renderReviewFeedback(form, row) {
+    if (!form) return;
+    const notes = row.review_notes || {};
+    const status = row.review_status || 'pending';
+    const generalNote = (notes._general || '').trim();
+    const reviewedAt = row.reviewed_at;
+
+    // Top banner — only render when supervisor actually reviewed (status != pending
+    // or general note exists, or any per-field note exists)
+    const hasFieldNotes = Object.keys(notes).some(k => k !== '_general' && (notes[k] || '').trim());
+    const reviewed = status !== 'pending' || generalNote || hasFieldNotes;
+
+    // Clean previous render (safe to call repeatedly)
+    form.querySelectorAll('.review-banner, .checkin__review-note').forEach(n => n.remove());
+
+    if (reviewed) {
+      const banner = document.createElement('div');
+      banner.className = `review-banner review-banner--${status}`;
+      const statusLabel = {
+        approved: '✓ Прийнято',
+        needs_revision: '⟳ Потрібно доопрацювати',
+        pending: 'На перевірці',
+      }[status] || status;
+      const stamp = reviewedAt
+        ? new Date(reviewedAt).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })
+        : '';
+      banner.innerHTML = `
+        <div class="review-banner__head">
+          <span class="review-banner__status">${escapeHtml(statusLabel)}</span>
+          ${stamp ? `<span class="review-banner__stamp">${escapeHtml(stamp)}</span>` : ''}
+        </div>
+        ${generalNote ? `<div class="review-banner__note">${escapeHtml(generalNote).replace(/\n/g,'<br>')}</div>` : ''}
+      `;
+      // Insert right after intro
+      const intro = form.querySelector('.checkin__intro');
+      if (intro && intro.nextSibling) intro.parentNode.insertBefore(banner, intro.nextSibling);
+      else form.insertBefore(banner, form.firstChild);
+    }
+
+    // Per-field comments
+    form.querySelectorAll('.checkin__field').forEach(fieldEl => {
+      const key = fieldEl.dataset.fieldKey;
+      if (!key) return;
+      const note = (notes[key] || '').trim();
+      if (!note) return;
+      const block = document.createElement('div');
+      block.className = 'checkin__review-note';
+      block.innerHTML = `
+        <div class="checkin__review-note__label">Коментар керівника</div>
+        <div class="checkin__review-note__body">${escapeHtml(note).replace(/\n/g,'<br>')}</div>
+      `;
+      fieldEl.appendChild(block);
+    });
+  }
+
   // ===========================================================
   // Supervisor dashboard
+  // Layout:
+  //   [overview matrix — клікабельна, скрол до картки]
+  //   [filter chips: status × student]
+  //   [submission cards — accordion]
+  //     ▾ Олексій · День 1 · Дослідження  [status badge] [updated_at]
+  //     │ status selector + general comment
+  //     │ field row | value | comment textarea
+  //     │ ...
+  //     │ [Save review]
   // ===========================================================
+  const STATUS_LABELS = {
+    pending: 'На перевірці',
+    approved: '✓ Прийнято',
+    needs_revision: '⟳ Потребує доопрацювання',
+  };
+  let supervisorState = {
+    rows: [],         // raw submission rows from Supabase
+    filterStatus: 'all',
+    filterStudent: 'all',
+    openCardId: null, // submission id that's currently expanded
+  };
+
   async function renderSupervisorDashboard(slot) {
     if (!SUPABASE_READY) {
       slot.innerHTML = '<p class="supervisor-dashboard__warn">Supabase не налаштовано — дашборд порожній.</p>';
@@ -664,70 +746,293 @@
         slot.innerHTML = `<p class="supervisor-dashboard__warn">Не вдалось завантажити (${res.status}).</p>`;
         return;
       }
-      const rows = await res.json();
-      const dayIds = PAGES.filter(p => p.id.startsWith('day-')).map(p => p.id);
-
-      // Group by student_slug
-      const grouped = {};
-      STUDENTS.forEach(s => { grouped[s.slug] = {}; });
-      rows.forEach(r => {
-        if (!grouped[r.student_slug]) grouped[r.student_slug] = {};
-        grouped[r.student_slug][r.day_id] = r;
-      });
-
-      let html = '<table class="supervisor-table"><thead><tr><th>Студент</th>';
-      dayIds.forEach(d => { html += `<th>${escapeHtml(d.replace('day-', 'D'))}</th>`; });
-      html += '<th>Портфоліо</th></tr></thead><tbody>';
-
-      STUDENTS.forEach(s => {
-        html += `<tr><td><strong>${escapeHtml(s.name)}</strong><br><span class="supervisor-table__slug">${escapeHtml(s.slug)}</span></td>`;
-        dayIds.forEach(d => {
-          const row = grouped[s.slug] && grouped[s.slug][d];
-          if (row) {
-            const dt = new Date(row.updated_at);
-            const stamp = dt.toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' });
-            html += `<td class="cell--done"><button class="cell-btn" data-student="${escapeHtml(s.slug)}" data-day="${escapeHtml(d)}">✓<span class="cell-stamp">${escapeHtml(stamp)}</span></button></td>`;
-          } else {
-            html += `<td class="cell--empty">○</td>`;
-          }
-        });
-        html += `<td><a class="supervisor-table__portfolio" href="portfolio.html?student=${encodeURIComponent(s.slug)}" target="_blank">портфоліо ↗</a></td>`;
-        html += '</tr>';
-      });
-      html += '</tbody></table>';
-      html += '<div id="supervisorDetail" class="supervisor-detail" hidden></div>';
-      slot.innerHTML = html;
-
-      // Wire up cell clicks to show submission payload
-      slot.querySelectorAll('.cell-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const slug = btn.dataset.student;
-          const dayId = btn.dataset.day;
-          const row = grouped[slug] && grouped[slug][dayId];
-          const detail = slot.querySelector('#supervisorDetail');
-          if (!row || !detail) return;
-          detail.hidden = false;
-          const student = STUDENTS.find(s => s.slug === slug);
-          let payloadHtml = '';
-          for (const [k, v] of Object.entries(row.payload || {})) {
-            const isUrl = typeof v === 'string' && /^https?:\/\//i.test(v);
-            const valueHtml = isUrl
-              ? `<a href="${escapeHtml(v)}" target="_blank" rel="noopener">${escapeHtml(v)}</a>`
-              : `<span>${escapeHtml(String(v)).replace(/\n/g, '<br>')}</span>`;
-            payloadHtml += `<div class="supervisor-detail__row"><div class="supervisor-detail__key">${escapeHtml(k)}</div><div class="supervisor-detail__val">${valueHtml}</div></div>`;
-          }
-          detail.innerHTML = `
-            <div class="supervisor-detail__head">
-              <h3>${escapeHtml(student ? student.name : slug)} · ${escapeHtml(dayId)}</h3>
-              <div class="supervisor-detail__meta">${escapeHtml(new Date(row.updated_at).toLocaleString('uk-UA'))}</div>
-            </div>
-            <div class="supervisor-detail__body">${payloadHtml}</div>
-          `;
-          detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-      });
+      supervisorState.rows = await res.json();
+      renderSupervisorView(slot);
     } catch (e) {
       slot.innerHTML = `<p class="supervisor-dashboard__warn">Помилка: ${escapeHtml(e.message)}</p>`;
+    }
+  }
+
+  function renderSupervisorView(slot) {
+    const dayIds = PAGES.filter(p => p.id.startsWith('day-')).map(p => p.id);
+    const rows = supervisorState.rows;
+
+    // Group by student → day for the matrix
+    const grouped = {};
+    STUDENTS.forEach(s => { grouped[s.slug] = {}; });
+    rows.forEach(r => {
+      if (!grouped[r.student_slug]) grouped[r.student_slug] = {};
+      grouped[r.student_slug][r.day_id] = r;
+    });
+
+    // === Top: overview matrix (click cell → expand that card) ===
+    let matrix = '<table class="supervisor-table"><thead><tr><th>Студент</th>';
+    dayIds.forEach(d => { matrix += `<th>${escapeHtml(d.replace('day-', 'D'))}</th>`; });
+    matrix += '<th>Портфоліо</th></tr></thead><tbody>';
+    STUDENTS.forEach(s => {
+      matrix += `<tr><td><strong>${escapeHtml(s.name)}</strong><br><span class="supervisor-table__slug">${escapeHtml(s.slug)}</span></td>`;
+      dayIds.forEach(d => {
+        const row = grouped[s.slug] && grouped[s.slug][d];
+        if (row) {
+          const status = row.review_status || 'pending';
+          const glyph = status === 'approved' ? '✓' : (status === 'needs_revision' ? '⟳' : '●');
+          matrix += `<td class="cell--${status}"><button class="cell-btn cell-btn--${status}" data-submission-id="${escapeHtml(row.id)}">${glyph}</button></td>`;
+        } else {
+          matrix += `<td class="cell--empty">○</td>`;
+        }
+      });
+      matrix += `<td><a class="supervisor-table__portfolio" href="portfolio.html?student=${encodeURIComponent(s.slug)}" target="_blank">портфоліо ↗</a></td>`;
+      matrix += '</tr>';
+    });
+    matrix += '</tbody></table>';
+
+    // === Filters ===
+    const statusCounts = { all: rows.length, pending: 0, approved: 0, needs_revision: 0 };
+    rows.forEach(r => { statusCounts[r.review_status || 'pending']++; });
+    const filterChip = (key, label, count, group, current) => {
+      const active = current === key ? ' supervisor-filter__chip--active' : '';
+      return `<button class="supervisor-filter__chip${active}" data-group="${group}" data-value="${key}">${escapeHtml(label)} <span class="supervisor-filter__count">${count}</span></button>`;
+    };
+    let filters = '<div class="supervisor-filter">';
+    filters += '<div class="supervisor-filter__group"><span class="supervisor-filter__title">Статус</span>';
+    filters += filterChip('all', 'усі', statusCounts.all, 'status', supervisorState.filterStatus);
+    filters += filterChip('pending', 'на перевірці', statusCounts.pending, 'status', supervisorState.filterStatus);
+    filters += filterChip('needs_revision', 'доопрацювати', statusCounts.needs_revision, 'status', supervisorState.filterStatus);
+    filters += filterChip('approved', 'прийнято', statusCounts.approved, 'status', supervisorState.filterStatus);
+    filters += '</div>';
+    filters += '<div class="supervisor-filter__group"><span class="supervisor-filter__title">Студент</span>';
+    filters += filterChip('all', 'усі', rows.length, 'student', supervisorState.filterStudent);
+    STUDENTS.forEach(s => {
+      const c = rows.filter(r => r.student_slug === s.slug).length;
+      filters += filterChip(s.slug, s.name, c, 'student', supervisorState.filterStudent);
+    });
+    filters += '</div></div>';
+
+    // === Cards (filtered) ===
+    let cards = '<div class="supervisor-cards">';
+    const visible = rows.filter(r => {
+      if (supervisorState.filterStatus !== 'all' && (r.review_status || 'pending') !== supervisorState.filterStatus) return false;
+      if (supervisorState.filterStudent !== 'all' && r.student_slug !== supervisorState.filterStudent) return false;
+      return true;
+    });
+    if (!visible.length) {
+      cards += '<p class="supervisor-cards__empty">Нічого не знайдено за поточними фільтрами.</p>';
+    } else {
+      visible.forEach(r => { cards += renderSubmissionCard(r); });
+    }
+    cards += '</div>';
+
+    slot.innerHTML = matrix + filters + cards;
+
+    // Wire cell clicks → expand + scroll
+    slot.querySelectorAll('.cell-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.submissionId;
+        supervisorState.openCardId = id;
+        renderSupervisorView(slot);
+        const card = slot.querySelector(`.supervisor-card[data-id="${id}"]`);
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // Wire filters
+    slot.querySelectorAll('.supervisor-filter__chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const group = chip.dataset.group;
+        const value = chip.dataset.value;
+        if (group === 'status') supervisorState.filterStatus = value;
+        else if (group === 'student') supervisorState.filterStudent = value;
+        renderSupervisorView(slot);
+      });
+    });
+
+    // Wire card heads (toggle expand)
+    slot.querySelectorAll('.supervisor-card__head').forEach(head => {
+      head.addEventListener('click', () => {
+        const card = head.closest('.supervisor-card');
+        const id = card.dataset.id;
+        supervisorState.openCardId = (supervisorState.openCardId === id) ? null : id;
+        renderSupervisorView(slot);
+      });
+    });
+
+    // Wire save buttons
+    slot.querySelectorAll('.supervisor-card__save').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const card = btn.closest('.supervisor-card');
+        await saveReview(card, slot);
+      });
+    });
+  }
+
+  function renderSubmissionCard(row) {
+    const student = STUDENTS.find(s => s.slug === row.student_slug);
+    const studentName = student ? student.name : row.student_slug;
+    const studentColor = student ? student.color : 'var(--coral)';
+    const page = PAGES.find(p => p.id === row.day_id);
+    const dayLabel = page ? page.label : row.day_id;
+    const schema = SUBMISSION_SCHEMAS[row.day_id];
+    const status = row.review_status || 'pending';
+    const notes = row.review_notes || {};
+    const generalNote = notes._general || '';
+    const isOpen = supervisorState.openCardId === row.id;
+    const stamp = new Date(row.updated_at).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' });
+    const reviewedStamp = row.reviewed_at
+      ? new Date(row.reviewed_at).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })
+      : '';
+
+    let fieldsHtml = '';
+    if (schema && schema.fields) {
+      schema.fields.forEach(f => {
+        const val = (row.payload || {})[f.key];
+        const note = notes[f.key] || '';
+        fieldsHtml += `
+          <div class="supervisor-card__field">
+            <div class="supervisor-card__field-label">${escapeHtml(f.label)}</div>
+            <div class="supervisor-card__field-value">${renderFieldValue(val, f.type)}</div>
+            <div class="supervisor-card__field-comment">
+              <label class="supervisor-card__comment-label">Коментар до поля</label>
+              <textarea class="supervisor-card__comment" data-field-key="${escapeHtml(f.key)}" rows="2" placeholder="Що варто доопрацювати або похвалити...">${escapeHtml(note)}</textarea>
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      // Fallback — no schema (e.g. legacy data with old keys)
+      Object.entries(row.payload || {}).forEach(([k, v]) => {
+        const note = notes[k] || '';
+        fieldsHtml += `
+          <div class="supervisor-card__field">
+            <div class="supervisor-card__field-label">${escapeHtml(k)}</div>
+            <div class="supervisor-card__field-value">${renderFieldValue(v, null)}</div>
+            <div class="supervisor-card__field-comment">
+              <label class="supervisor-card__comment-label">Коментар до поля</label>
+              <textarea class="supervisor-card__comment" data-field-key="${escapeHtml(k)}" rows="2">${escapeHtml(note)}</textarea>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    const statusOptions = ['pending', 'approved', 'needs_revision'].map(s =>
+      `<option value="${s}"${s === status ? ' selected' : ''}>${escapeHtml(STATUS_LABELS[s])}</option>`
+    ).join('');
+
+    return `
+      <div class="supervisor-card supervisor-card--${status}${isOpen ? ' supervisor-card--open' : ''}" data-id="${escapeHtml(row.id)}" style="--student-color: ${studentColor}">
+        <button class="supervisor-card__head" type="button">
+          <div class="supervisor-card__head-main">
+            <span class="supervisor-card__student">${escapeHtml(studentName)}</span>
+            <span class="supervisor-card__day">${escapeHtml(dayLabel)}</span>
+          </div>
+          <div class="supervisor-card__head-meta">
+            <span class="supervisor-card__badge supervisor-card__badge--${status}">${escapeHtml(STATUS_LABELS[status])}</span>
+            <span class="supervisor-card__stamp">здано: ${escapeHtml(stamp)}</span>
+            ${reviewedStamp ? `<span class="supervisor-card__stamp">переглянуто: ${escapeHtml(reviewedStamp)}</span>` : ''}
+            <span class="supervisor-card__chevron">${isOpen ? '▾' : '▸'}</span>
+          </div>
+        </button>
+        ${isOpen ? `
+        <div class="supervisor-card__body">
+          <div class="supervisor-card__controls">
+            <label class="supervisor-card__control">
+              <span class="supervisor-card__control-label">Статус</span>
+              <select class="supervisor-card__status">${statusOptions}</select>
+            </label>
+            <label class="supervisor-card__control supervisor-card__control--wide">
+              <span class="supervisor-card__control-label">Загальний коментар</span>
+              <textarea class="supervisor-card__general" rows="3" placeholder="Що загалом — основні думки про здачу...">${escapeHtml(generalNote)}</textarea>
+            </label>
+          </div>
+          <div class="supervisor-card__fields">${fieldsHtml}</div>
+          <div class="supervisor-card__actions">
+            <button class="supervisor-card__save" type="button">Зберегти ревʼю</button>
+            <span class="supervisor-card__save-status" data-role="save-status" hidden></span>
+          </div>
+        </div>` : ''}
+      </div>
+    `;
+  }
+
+  function renderFieldValue(val, type) {
+    if (val == null || val === '') return '<span class="supervisor-card__field-empty">— порожньо —</span>';
+    const s = String(val);
+    if (type === 'url' || /^https?:\/\//i.test(s)) {
+      return `<a href="${escapeHtml(s)}" target="_blank" rel="noopener" class="supervisor-card__link">${escapeHtml(s)}</a>`;
+    }
+    // For long text — show in a scrollable pre-like block
+    const long = s.length > 200 || s.includes('\n');
+    if (long) {
+      return `<div class="supervisor-card__longtext">${escapeHtml(s).replace(/\n/g, '<br>')}</div>`;
+    }
+    return `<span>${escapeHtml(s)}</span>`;
+  }
+
+  async function saveReview(card, slot) {
+    if (!card) return;
+    const id = card.dataset.id;
+    const status = card.querySelector('.supervisor-card__status').value;
+    const general = card.querySelector('.supervisor-card__general').value.trim();
+    const review_notes = {};
+    if (general) review_notes._general = general;
+    card.querySelectorAll('.supervisor-card__comment').forEach(t => {
+      const key = t.dataset.fieldKey;
+      const v = t.value.trim();
+      if (v) review_notes[key] = v;
+    });
+
+    const statusEl = card.querySelector('[data-role="save-status"]');
+    const saveBtn = card.querySelector('.supervisor-card__save');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Зберігаю…';
+    statusEl.hidden = false;
+    statusEl.dataset.kind = 'pending';
+    statusEl.textContent = 'Зберігаю…';
+
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/submissions?id=eq.${encodeURIComponent(id)}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Prefer': 'return=representation',
+          },
+          body: JSON.stringify({
+            review_notes,
+            review_status: status,
+            reviewed_at: new Date().toISOString(),
+          }),
+        }
+      );
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        statusEl.dataset.kind = 'error';
+        statusEl.textContent = `Не вдалось (${res.status}). ${text || ''}`;
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Зберегти ревʼю';
+        return;
+      }
+      const updated = await res.json();
+      if (Array.isArray(updated) && updated.length) {
+        // Update in-memory row
+        const idx = supervisorState.rows.findIndex(r => r.id === id);
+        if (idx >= 0) supervisorState.rows[idx] = updated[0];
+      }
+      statusEl.dataset.kind = 'success';
+      statusEl.textContent = '✓ Збережено';
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Зберегти ревʼю';
+      // Re-render so badge + matrix reflect new status
+      setTimeout(() => renderSupervisorView(slot), 400);
+    } catch (err) {
+      statusEl.dataset.kind = 'error';
+      statusEl.textContent = `Помилка мережі: ${err.message}`;
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Зберегти ревʼю';
     }
   }
 

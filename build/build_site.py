@@ -292,9 +292,10 @@ def render_checkin_form(day_id, schema):
             )
         elif f["type"] == "textarea":
             minlen = f.get("min_length")
+            rows = f.get("rows", 4)
             min_attr = f'minlength="{minlen}"' if minlen else ""
             input_html = (
-                f'<textarea id="{day_id}-{key}" name="{key}" rows="4" '
+                f'<textarea id="{day_id}-{key}" name="{key}" rows="{rows}" '
                 f'placeholder="{placeholder}" {min_attr} {required}></textarea>'
             )
         else:  # text
@@ -305,7 +306,7 @@ def render_checkin_form(day_id, schema):
 
         help_html = f'<div class="checkin__help">{help_text}</div>' if help_text else ""
         fields_html.append(
-            f'<div class="checkin__field">'
+            f'<div class="checkin__field" data-field-key="{key}">'
             f'<label for="{day_id}-{key}" class="checkin__label">{label}</label>'
             f'{input_html}'
             f'{help_html}'
@@ -523,6 +524,11 @@ def main():
 
     # Inject Supabase + students into app.js
     app_js = inject_supabase_config(app_js, supabase_url, supabase_anon_key, STUDENTS)
+    # Submission schemas — used by supervisor dashboard to render field labels.
+    app_js = app_js.replace(
+        "__SUBMISSION_SCHEMAS__",
+        json.dumps(SUBMISSIONS, ensure_ascii=False),
+    )
 
     # Inject
     output = template.replace("__STYLES__", styles)
