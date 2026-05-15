@@ -314,6 +314,33 @@
     location.reload();
   });
 
+  // ===========================================================
+  // Mobile sidebar drawer
+  // ===========================================================
+  const sidebarEl = document.getElementById('sidebar');
+  const backdropEl = document.getElementById('sidebarBackdrop');
+  const menuBtn = document.getElementById('mobileMenuBtn');
+
+  function setSidebarOpen(open) {
+    if (!sidebarEl || !backdropEl || !menuBtn) return;
+    sidebarEl.classList.toggle('is-open', open);
+    backdropEl.classList.toggle('is-visible', open);
+    backdropEl.hidden = !open;
+    menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+
+  if (menuBtn) menuBtn.addEventListener('click', () => {
+    setSidebarOpen(!sidebarEl.classList.contains('is-open'));
+  });
+  if (backdropEl) backdropEl.addEventListener('click', () => setSidebarOpen(false));
+  // Esc closes the drawer
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sidebarEl && sidebarEl.classList.contains('is-open')) {
+      setSidebarOpen(false);
+    }
+  });
+
   function persistState() {
     sessionStorage.setItem('cp', JSON.stringify(storedPasswords));
     localStorage.setItem('unlocked', JSON.stringify(unlockedDays));
@@ -421,6 +448,8 @@
     currentPage = pageId;
     location.hash = pageId;
     renderNav();
+    // On mobile, close the drawer after picking a page
+    setSidebarOpen(false);
     const isUnlocked = unlockedDays.includes(pageId);
     if (isUnlocked) {
       await renderPage(pageId);

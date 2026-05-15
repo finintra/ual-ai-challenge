@@ -2244,72 +2244,241 @@ html { scroll-behavior: smooth; }
 }
 
 /* =========================================================
+   MOBILE TOPBAR + DRAWER SCAFFOLD
+   Hidden on desktop, made visible inside the mobile media query.
+   ========================================================= */
+.mobile-topbar { display: none; }
+.mobile-menu-btn { display: none; }
+.sidebar-backdrop { display: none; }
+
+/* =========================================================
    MOBILE
    ========================================================= */
 @media (max-width: 880px) {
-  .day-nav {
-    margin-bottom: 32px;
-    padding: 8px 0;
-    overflow-x: auto;
-    flex-wrap: nowrap;
+  /* --- Mobile top bar (fixed, replaces sidebar visibility) --- */
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    padding: 10px 14px;
+    height: 52px;
+    background: var(--ink-surface);
+    border-bottom: 1px solid var(--rule);
+    /* leave room for fixed .theme-toggle on the right */
+    padding-right: 130px;
   }
-  .day-nav::-webkit-scrollbar { display: none; }
-  .day-nav__item { flex-shrink: 0; padding: 6px 10px; font-size: 10px; }
-  .day-block { scroll-margin-top: 64px; }
+  .mobile-topbar__brand {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-  .theme-toggle { top: 10px; right: 10px; font-size: 9px; }
-  .theme-toggle__btn { padding: 5px 10px; }
+  .mobile-menu-btn {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 36px;
+    height: 36px;
+    padding: 8px 7px;
+    background: transparent;
+    border: 1px solid var(--rule-strong);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .mobile-menu-btn span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: transform 0.18s, opacity 0.15s;
+  }
+  .mobile-menu-btn[aria-expanded="true"] span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  .mobile-menu-btn[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+  .mobile-menu-btn[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
+  /* --- Backdrop --- */
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 70;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .sidebar-backdrop.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* --- App grid: single column (sidebar absorbed into drawer) --- */
   .app { grid-template-columns: 1fr; }
 
+  /* --- Sidebar becomes off-canvas drawer --- */
   .sidebar {
-    position: relative;
-    height: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--rule);
-    padding: 20px 20px 16px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(82vw, 320px);
+    height: 100vh;
+    height: 100dvh;
+    z-index: 80;
+    padding: 24px 20px 20px;
+    border-right: 1px solid var(--rule);
+    border-bottom: none;
+    transform: translateX(-105%);
+    transition: transform 0.22s ease;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
   }
+  .sidebar.is-open { transform: translateX(0); }
   .sidebar__brand { margin-bottom: 18px; padding-bottom: 14px; }
 
   .nav { gap: 16px; }
   .nav__group-label { margin-bottom: 6px; }
 
-  .day-row { padding: 8px 10px; }
+  .day-row { padding: 10px 12px; }
   .day-row__theme { font-size: 14px; }
 
-  .main { padding: 28px 22px 56px; }
+  /* --- Main content --- */
+  .main {
+    padding: 20px 18px 56px;
+    max-width: 100%;
+  }
 
-  .day-hero { margin-bottom: 36px; padding-bottom: 24px; }
-  .day-hero__theme { font-size: 44px; }
-  .day-hero__tagline { font-size: 16px; }
+  /* Day-page sticky nav: sits under the mobile topbar */
+  .day-nav {
+    margin-bottom: 28px;
+    padding: 8px 0;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    top: 52px;
+  }
+  .day-nav::-webkit-scrollbar { display: none; }
+  .day-nav__item { flex-shrink: 0; padding: 6px 10px; font-size: 10px; }
+  .day-block { scroll-margin-top: 116px; }
 
-  .content h1 { font-size: 32px; }
-  .content h2 { font-size: 24px; }
-  .login__title { font-size: 42px; }
-  .unlock-panel { padding: 28px 24px; }
-  .unlock-panel__title { font-size: 24px; }
+  /* Theme toggle: smaller and tucked against the right edge */
+  .theme-toggle { top: 8px; right: 10px; font-size: 9px; }
+  .theme-toggle__btn { padding: 5px 10px; }
 
-  .picker__title { font-size: 38px; }
+  /* --- Hero & typography: reduce display sizes for narrow screens --- */
+  .day-hero { margin-bottom: 32px; padding-bottom: 22px; }
+  .day-hero__eyebrow { font-size: 10px; margin-bottom: 16px; }
+  .day-hero__theme { font-size: 38px; letter-spacing: -0.02em; }
+  .day-hero__tagline { font-size: 15px; margin-bottom: 18px; }
+  .day-hero__progress { font-size: 10px; gap: 12px; }
+
+  .content { font-size: 15.5px; line-height: 1.65; }
+  .content h1 { font-size: 30px; }
+  .content h2 { font-size: 22px; margin-top: 40px; }
+  .content h3:not(.section) { font-size: 19px; }
+  .content h3.section { font-size: 10.5px; margin-top: 32px; }
+  .content blockquote { font-size: 17px; padding-left: 16px; }
+  .content pre { padding: 14px 16px; font-size: 12.5px; }
+  .content table { font-size: 13px; }
+  .content table th, .content table td { padding: 8px 10px; }
+  /* Allow wide tables to scroll instead of squishing */
+  .content { overflow-x: visible; }
+
+  /* --- Login + picker --- */
+  .login { padding: 20px 18px; }
+  .login__title { font-size: 38px; line-height: 1; }
+  .login__subtitle { font-size: 16px; margin-bottom: 24px; }
+  .login__topline { font-size: 10px; margin-bottom: 16px; }
+
+  .picker { padding: 20px 18px; }
+  .picker__card { max-width: 100%; }
+  .picker__title { font-size: 34px; }
+  .picker__subtitle { font-size: 16px; margin-bottom: 24px; }
   .picker__options { grid-template-columns: 1fr; }
+  .picker__option { padding: 20px 22px 18px; }
+  .picker__option-name { font-size: 26px; }
 
-  .checkin { padding: 24px 20px; margin-top: 36px; }
-  .checkin__title { font-size: 24px; }
+  /* --- Unlock panel --- */
+  .unlock-panel { padding: 24px 20px; }
+  .unlock-panel__title { font-size: 22px; }
+  .unlock-panel__form { flex-direction: column; }
+  .unlock-panel__form input,
+  .unlock-panel__form button { width: 100%; }
 
-  .supervisor-table { font-size: 12.5px; }
-  .supervisor-table th, .supervisor-table td { padding: 6px 8px; }
+  /* --- Checkin form (the day journal) --- */
+  .checkin { padding: 20px 16px; margin-top: 32px; border-radius: 8px; }
+  .checkin__title { font-size: 22px; }
+  .checkin__intro { font-size: 14px; }
+  .checkin__fields { gap: 16px; }
+  .checkin__label { font-size: 10.5px; }
+  /* iOS Safari zooms forms when font-size < 16px on focus — pin to 16px */
+  .checkin__field input,
+  .checkin__field textarea { font-size: 16px; padding: 10px 12px; }
+  .checkin__submit { width: 100%; padding: 14px 18px; }
+
+  /* --- Supervisor dashboard --- */
+  .supervisor-dashboard { margin: 24px 0 20px; }
+  /* Matrix: let it scroll sideways instead of crushing columns */
+  .supervisor-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    font-size: 12.5px;
+  }
+  .supervisor-table th, .supervisor-table td { padding: 6px 10px; }
   .supervisor-detail__row { grid-template-columns: 1fr; gap: 4px; }
 
   .supervisor-filter { gap: 12px; padding: 12px; }
   .supervisor-filter__group { gap: 4px; }
-  .supervisor-card__head { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .supervisor-card__head-meta { justify-content: flex-start; }
-  .supervisor-card__controls { grid-template-columns: 1fr; }
-  .supervisor-card__field { grid-template-columns: 1fr; }
-  .supervisor-card__field-comment { grid-column: 1; }
+  .supervisor-filter__chip { font-size: 10.5px; padding: 5px 10px; }
 
+  .supervisor-card__head { flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px 16px; }
+  .supervisor-card__head-meta { justify-content: flex-start; }
+  .supervisor-card__student { font-size: 16px; }
+  .supervisor-card__body { padding: 4px 16px 18px; }
+  .supervisor-card__controls { grid-template-columns: 1fr; }
+  .supervisor-card__field { grid-template-columns: 1fr; gap: 8px; padding: 12px 0; }
+  .supervisor-card__field-comment { grid-column: 1; }
+  .supervisor-card__general,
+  .supervisor-card__comment,
+  .supervisor-card__status { font-size: 16px; }
+  .supervisor-card__save { width: 100%; }
+  .supervisor-card__actions { flex-direction: column; align-items: stretch; gap: 8px; }
+
+  /* --- Portfolio (public page, no sidebar) --- */
   .portfolio { padding: 36px 20px 56px; }
-  .portfolio__title { font-size: 48px; }
+  .portfolio__title { font-size: 44px; }
+  .portfolio__subtitle { font-size: 17px; }
   .portfolio-day__head { gap: 10px; }
-  .portfolio-day__theme { font-size: 24px; }
+  .portfolio-day__theme { font-size: 22px; }
   .portfolio-day__field { grid-template-columns: 1fr; gap: 6px; }
+
+  /* --- Review feedback (student's view of supervisor comments) --- */
+  .review-banner { padding: 12px 14px; }
+  .review-banner__head { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .checkin__review-note { padding: 8px 12px; }
+}
+
+/* Very small phones — keep things from breaking on 360px wide screens */
+@media (max-width: 380px) {
+  .day-hero__theme { font-size: 32px; }
+  .content h1 { font-size: 26px; }
+  .content h2 { font-size: 20px; }
+  .login__title { font-size: 32px; }
+  .picker__title { font-size: 28px; }
+  .main { padding: 16px 14px 48px; }
+  .checkin { padding: 18px 14px; }
+  .mobile-topbar { padding-left: 12px; padding-right: 110px; }
+  .mobile-topbar__brand { font-size: 10px; letter-spacing: 0.16em; }
 }

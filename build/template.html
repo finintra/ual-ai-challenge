@@ -61,7 +61,18 @@
 
 <!-- App shell (hidden until login + student selected) -->
 <div id="app" class="app" hidden>
-  <aside class="sidebar">
+  <!-- Mobile top bar: hamburger + brand. Hidden on desktop via CSS. -->
+  <header class="mobile-topbar">
+    <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Відкрити меню" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="mobile-topbar__brand">AI CHALLENGE · 7 днів</div>
+  </header>
+
+  <!-- Backdrop for off-canvas sidebar on mobile -->
+  <div id="sidebarBackdrop" class="sidebar-backdrop" hidden></div>
+
+  <aside class="sidebar" id="sidebar">
     <header class="sidebar__brand">
       <div class="sidebar__brand-mono">AI CHALLENGE</div>
       <div class="sidebar__brand-name">7 днів<br/>УАЛ × 2026</div>
