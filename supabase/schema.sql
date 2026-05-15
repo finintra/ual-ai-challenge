@@ -43,3 +43,26 @@ drop trigger if exists submissions_set_updated_at on submissions;
 create trigger submissions_set_updated_at
   before update on submissions
   for each row execute function set_updated_at();
+
+-- =========================================================
+-- v2 migration: supervisor review fields
+-- Безпечно запускати повторно (IF NOT EXISTS).
+-- =========================================================
+alter table submissions add column if not exists review_notes  jsonb       not null default '{}'::jsonb;
+alter table submissions add column if not exists review_status text        not null default 'pending';
+alter table submissions add column if not exists reviewed_at   timestamptz;
+
+-- Constraint на дозволені значення статусу.
+-- pending         — щойно здано, ще не переглянуто
+-- approved        — керівник прийняв роботу
+-- needs_revision  — потрібно доопрацювати
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'submissions_review_status_check'
+  ) then
+    alter table submissions
+      add constraint submissions_review_status_check
+      check (review_status in ('pending', 'approved', 'needs_revision'));
+  end if;
+end$$;

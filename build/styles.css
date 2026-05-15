@@ -1396,6 +1396,388 @@ html, body {
 .day-row--submitted .day-row__num { color: var(--text-muted); }
 .day-row--submitted .day-row__theme { color: var(--text); }
 
+/* Matrix cell — coloured by review status */
+.supervisor-table .cell--pending { color: var(--text-muted); }
+.supervisor-table .cell--approved { color: var(--gold); }
+.supervisor-table .cell--needs_revision { color: var(--coral); }
+.supervisor-table .cell-btn--pending { color: var(--text-muted); }
+.supervisor-table .cell-btn--approved { color: var(--gold); }
+.supervisor-table .cell-btn--needs_revision { color: var(--coral); }
+
+/* =========================================================
+   SUPERVISOR FILTERS
+   ========================================================= */
+.supervisor-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin: 28px 0 18px;
+  padding: 16px 18px;
+  background: var(--ink-surface);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+}
+.supervisor-filter__group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.supervisor-filter__title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-right: 6px;
+}
+.supervisor-filter__chip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  background: var(--ink-elev);
+  color: var(--text-muted);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.supervisor-filter__chip:hover { color: var(--text); border-color: var(--rule-strong); }
+.supervisor-filter__chip--active {
+  background: var(--coral);
+  color: var(--on-coral);
+  border-color: var(--coral);
+}
+.supervisor-filter__count {
+  font-weight: 600;
+  opacity: 0.7;
+}
+.supervisor-filter__chip--active .supervisor-filter__count { opacity: 1; }
+
+/* =========================================================
+   SUPERVISOR CARDS (per-submission review UI)
+   ========================================================= */
+.supervisor-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 0 28px 0;
+}
+.supervisor-cards__empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.supervisor-card {
+  background: var(--ink-surface);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--student-color, var(--coral));
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.supervisor-card--open { border-color: var(--rule-strong); }
+
+.supervisor-card__head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  transition: background 0.15s;
+}
+.supervisor-card__head:hover { background: var(--ink-elev); }
+
+.supervisor-card__head-main {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+.supervisor-card__student {
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 36, "wght" 600;
+  font-size: 18px;
+  color: var(--text);
+}
+.supervisor-card__day {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.supervisor-card__head-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.supervisor-card__badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.supervisor-card__badge--pending {
+  background: var(--ink-elev);
+  color: var(--text-muted);
+  border: 1px solid var(--rule-strong);
+}
+.supervisor-card__badge--approved {
+  background: var(--gold-soft);
+  color: var(--gold);
+  border: 1px solid var(--gold);
+}
+.supervisor-card__badge--needs_revision {
+  background: var(--coral-soft);
+  color: var(--coral);
+  border: 1px solid var(--coral);
+}
+.supervisor-card__stamp {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 0.12em;
+}
+.supervisor-card__chevron {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-left: 4px;
+}
+
+.supervisor-card__body {
+  padding: 4px 20px 22px;
+  border-top: 1px solid var(--rule);
+}
+
+.supervisor-card__controls {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 14px 18px;
+  margin: 18px 0 24px;
+}
+.supervisor-card__control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.supervisor-card__control--wide { grid-column: 1 / -1; }
+
+.supervisor-card__control-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.supervisor-card__status,
+.supervisor-card__general,
+.supervisor-card__comment {
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 6px;
+  background: var(--ink-elev);
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  width: 100%;
+}
+.supervisor-card__status:focus,
+.supervisor-card__general:focus,
+.supervisor-card__comment:focus { border-color: var(--coral); }
+
+.supervisor-card__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.supervisor-card__field {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 14px 18px;
+  padding: 14px 0;
+  border-top: 1px dashed var(--rule);
+}
+.supervisor-card__field:first-child { border-top: none; padding-top: 0; }
+.supervisor-card__field-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.supervisor-card__field-value {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.55;
+  word-break: break-word;
+}
+.supervisor-card__field-empty { color: var(--text-faint); font-style: italic; }
+.supervisor-card__link { color: var(--coral); word-break: break-all; }
+.supervisor-card__longtext {
+  background: var(--ink-elev);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 12px 14px;
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 13.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+.supervisor-card__field-comment {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+.supervisor-card__comment-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.supervisor-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+.supervisor-card__save {
+  padding: 12px 22px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  background: var(--coral);
+  color: var(--on-coral);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.supervisor-card__save:hover { background: #FF7152; }
+.supervisor-card__save:active { transform: translateY(1px); }
+.supervisor-card__save:disabled { opacity: 0.6; cursor: wait; }
+
+.supervisor-card__save-status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+}
+.supervisor-card__save-status[data-kind="pending"] { color: var(--text-muted); }
+.supervisor-card__save-status[data-kind="success"] { color: var(--gold); }
+.supervisor-card__save-status[data-kind="error"] { color: var(--coral); }
+
+/* =========================================================
+   REVIEW FEEDBACK (visible to student on their day page)
+   ========================================================= */
+.review-banner {
+  margin: -4px 0 4px 0;
+  padding: 14px 18px;
+  border-radius: 8px;
+  border-left: 3px solid;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.review-banner__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.review-banner__status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.review-banner__stamp {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 0.14em;
+}
+.review-banner__note {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+}
+.review-banner--approved {
+  background: var(--gold-soft);
+  border-left-color: var(--gold);
+}
+.review-banner--approved .review-banner__status { color: var(--gold); }
+.review-banner--needs_revision {
+  background: var(--coral-soft);
+  border-left-color: var(--coral);
+}
+.review-banner--needs_revision .review-banner__status { color: var(--coral); }
+.review-banner--pending {
+  background: var(--ink-elev);
+  border-left-color: var(--text-muted);
+}
+.review-banner--pending .review-banner__status { color: var(--text-muted); }
+
+.checkin__review-note {
+  margin-top: 6px;
+  padding: 10px 14px;
+  background: var(--gold-soft);
+  border-left: 2px solid var(--gold);
+  border-radius: 6px;
+}
+.checkin__review-note__label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.checkin__review-note__body {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
 /* =========================================================
    PORTFOLIO PAGE (portfolio.html — public)
    ========================================================= */
@@ -1668,6 +2050,14 @@ html, body {
   .supervisor-table { font-size: 12.5px; }
   .supervisor-table th, .supervisor-table td { padding: 6px 8px; }
   .supervisor-detail__row { grid-template-columns: 1fr; gap: 4px; }
+
+  .supervisor-filter { gap: 12px; padding: 12px; }
+  .supervisor-filter__group { gap: 4px; }
+  .supervisor-card__head { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .supervisor-card__head-meta { justify-content: flex-start; }
+  .supervisor-card__controls { grid-template-columns: 1fr; }
+  .supervisor-card__field { grid-template-columns: 1fr; }
+  .supervisor-card__field-comment { grid-column: 1; }
 
   .portfolio { padding: 36px 20px 56px; }
   .portfolio__title { font-size: 48px; }
