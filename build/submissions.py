@@ -31,7 +31,7 @@ STUDENTS = [
 SUBMISSIONS = {
     "day-1": {
         "title": "Чек-ін: дослідження",
-        "intro": "Здай артефакти Дня 1 — після цього отримаєш код для розблокування Дня 2.",
+        "intro": "Здай артефакти Дня 1 — після цього отримаєш код для розблокування Дня 2. УАЛ-артефакти — спільні з парою: домовтесь хто пастить і вставте однакові посилання обидва.",
         "fields": [
             {"key": "claude_project_ual_url", "label": "URL твого Claude Project (УАЛ)", "type": "url", "required": True, "placeholder": "https://claude.ai/project/..."},
             {"key": "claude_project_personal_url", "label": "URL твого Claude Project (особистий трек)", "type": "url", "required": True},
@@ -47,7 +47,7 @@ SUBMISSIONS = {
 
     "day-2": {
         "title": "Чек-ін: бренд",
-        "intro": "Здай артефакти Дня 2 — після цього отримаєш код для розблокування Дня 3.",
+        "intro": "Здай артефакти Дня 2 — після цього отримаєш код для розблокування Дня 3. УАЛ-артефакти (Brand Guidelines, лого, mockup) — спільні з парою: домовтесь і вставте однакові посилання.",
         "fields": [
             {"key": "ual_brand_pdf_url", "label": "Brand Guidelines PDF — УАЛ", "type": "url", "required": True, "help": "1-2 сторінки: лого, палітра, шрифти, mood board"},
             {"key": "personal_brand_pdf_url", "label": "Brand Guidelines PDF — особистий трек", "type": "url", "required": True},
@@ -62,7 +62,7 @@ SUBMISSIONS = {
 
     "day-3": {
         "title": "Чек-ін: сайт",
-        "intro": "Здай артефакти Дня 3 — після цього отримаєш код для розблокування Дня 4.",
+        "intro": "Здай артефакти Дня 3 — після цього отримаєш код для розблокування Дня 4. УАЛ-сайт і Lighthouse — спільні з парою: однакові посилання у обох.",
         "fields": [
             {"key": "ual_site_url", "label": "Жива URL сайту — УАЛ", "type": "url", "required": True, "help": "Відкривається на телефоні і десктопі"},
             {"key": "personal_site_url", "label": "Жива URL сайту — особисте", "type": "url", "required": True},
@@ -75,7 +75,7 @@ SUBMISSIONS = {
 
     "day-4": {
         "title": "Чек-ін: соцмережі",
-        "intro": "Здай артефакти Дня 4 — після цього отримаєш код для розблокування Дня 5.",
+        "intro": "Здай артефакти Дня 4 — після цього отримаєш код для розблокування Дня 5. УАЛ-акаунти, TOV, контент-план і пости — спільні з парою: однакові посилання у обох.",
         "fields": [
             {"key": "ual_social_accounts", "label": "Посилання на акаунти УАЛ-треку (1 URL у рядку, мін. 2 платформи)", "type": "textarea", "required": True, "rows": 4, "min_length": 30, "help": "Facebook, IG, LinkedIn, TikTok — як домовились"},
             {"key": "personal_social_accounts", "label": "Посилання на акаунти особистого треку", "type": "textarea", "required": True, "rows": 4, "min_length": 30},
@@ -91,7 +91,7 @@ SUBMISSIONS = {
 
     "day-5": {
         "title": "Чек-ін: AI-медіа",
-        "intro": "Здай артефакти Дня 5 — після цього отримаєш код для розблокування Дня 6.",
+        "intro": "Здай артефакти Дня 5 — після цього отримаєш код для розблокування Дня 6. УАЛ-ролик і допоміжні файли — спільні з парою: однакові посилання у обох.",
         "fields": [
             {"key": "ual_video_url", "label": "Промо-ролик УАЛ (16:9, 30-60 сек, MP4)", "type": "url", "required": True, "help": "Drive / YouTube unlisted"},
             {"key": "personal_video_url", "label": "Промо-ролик особистий (9:16, 30-60 сек, MP4)", "type": "url", "required": True},
@@ -104,7 +104,7 @@ SUBMISSIONS = {
 
     "day-6": {
         "title": "Чек-ін: автоматизація",
-        "intro": "Здай артефакти Дня 6 — після цього отримаєш код для розблокування Дня 7.",
+        "intro": "Здай артефакти Дня 6 — після цього отримаєш код для розблокування Дня 7. УАЛ n8n workflow — спільний з парою (однакове посилання). Claude Code-задача — особиста, у кожного своя.",
         "fields": [
             {"key": "n8n_workflow_url", "label": "n8n workflow JSON (Drive)", "type": "url", "required": True, "help": "Експортований, можна імпортувати в інший n8n"},
             {"key": "workflow_demo_url", "label": "Скріни або відео роботи workflow", "type": "url", "required": True},
@@ -116,7 +116,7 @@ SUBMISSIONS = {
 
     "day-7": {
         "title": "Чек-ін: пітч і фінальне портфоліо",
-        "intro": "Здай фінальні артефакти — після цього отримаєш код «вершина».",
+        "intro": "Здай фінальні артефакти — після цього отримаєш код «вершина». УАЛ pitch deck і Loom — спільні з парою (однакові посилання у обох). Особистий deck, особистий Loom і рефлексія — у кожного свої.",
         "fields": [
             {"key": "ual_deck_url", "label": "Pitch deck УАЛ (Gamma / PDF)", "type": "url", "required": True},
             {"key": "personal_deck_url", "label": "Pitch deck особистий (Gamma / PDF)", "type": "url", "required": True},
