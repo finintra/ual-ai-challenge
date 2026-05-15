@@ -43,6 +43,9 @@ jobs:
           fi
 
       - name: Build site
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: python3 build/build_site.py
 
       - uses: actions/configure-pages@v5

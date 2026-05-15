@@ -5,19 +5,29 @@ Reads:
   - content/*.md (source content)
   - passwords.json (per-page passwords for the quest)
   - build/template.html, build/styles.css, build/app.js (UI shell)
+  - build/submissions.py (per-day checkin form schemas + STUDENTS)
+  - build/portfolio_template.html, build/portfolio_app.js (portfolio page)
 
 Outputs:
-  - dist/index.html (single self-contained file)
+  - dist/index.html      (single self-contained challenge UI)
+  - dist/portfolio.html  (public portfolio view, reads from Supabase)
 
 Each page is encrypted with its own password from passwords.json:
-  - "main"      → overview, day-1, journal (always-accessible)
-  - "day-N"     → day-N content (locked, unlocked via prior day's code)
+  - "main"       → overview, day-1, journal (always-accessible)
+  - "day-N"      → day-N content (locked, unlocked via prior day's code)
   - "supervisor" → supervisor.md (separate access)
+
+Environment variables (injected into app.js + portfolio_app.js):
+  - SUPABASE_URL       — e.g. https://abc.supabase.co
+  - SUPABASE_ANON_KEY  — public anon key
+If unset, the build proceeds and the site shows a graceful "submissions
+disabled" message in checkin forms.
 """
 import re
 import json
 import base64
 import os
+import sys
 from pathlib import Path
 import markdown
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -31,6 +41,10 @@ CONTENT = ROOT / "content"
 BUILD = ROOT / "build"
 DIST = ROOT / "dist"
 PASSWORDS_FILE = ROOT / "passwords.json"
+
+# Allow importing submissions.py from the build dir
+sys.path.insert(0, str(BUILD))
+from submissions import SUBMISSIONS, STUDENTS  # noqa: E402
 # ============================================================
 
 # Page definitions: (id, filename, label, password_key, locked_by_default, next_code_key)
@@ -164,6 +178,71 @@ def day_hero_html(page_id, label, total_days=7):
     )
 
 
+def html_escape(s):
+    return (
+        s.replace("&", "&amp;")
+         .replace("<", "&lt;")
+         .replace(">", "&gt;")
+         .replace('"', "&quot;")
+         .replace("'", "&#39;")
+    )
+
+
+def render_checkin_form(day_id, schema):
+    """Render the per-day checkin form HTML from a schema."""
+    fields_html = []
+    for f in schema["fields"]:
+        key = f["key"]
+        label = html_escape(f["label"])
+        required = "required" if f.get("required") else ""
+        placeholder = html_escape(f.get("placeholder", ""))
+        help_text = html_escape(f.get("help", ""))
+
+        if f["type"] == "url":
+            input_html = (
+                f'<input type="url" id="{day_id}-{key}" name="{key}" '
+                f'inputmode="url" autocomplete="off" '
+                f'placeholder="{placeholder or "https://"}" {required}>'
+            )
+        elif f["type"] == "textarea":
+            minlen = f.get("min_length")
+            min_attr = f'minlength="{minlen}"' if minlen else ""
+            input_html = (
+                f'<textarea id="{day_id}-{key}" name="{key}" rows="4" '
+                f'placeholder="{placeholder}" {min_attr} {required}></textarea>'
+            )
+        else:  # text
+            input_html = (
+                f'<input type="text" id="{day_id}-{key}" name="{key}" '
+                f'placeholder="{placeholder}" {required}>'
+            )
+
+        help_html = f'<div class="checkin__help">{help_text}</div>' if help_text else ""
+        fields_html.append(
+            f'<div class="checkin__field">'
+            f'<label for="{day_id}-{key}" class="checkin__label">{label}</label>'
+            f'{input_html}'
+            f'{help_html}'
+            f'</div>'
+        )
+
+    title = html_escape(schema.get("title", "Чек-ін"))
+    intro = html_escape(schema.get("intro", ""))
+
+    return (
+        f'<form class="checkin" data-day="{day_id}" novalidate>'
+        f'<div class="checkin__eyebrow">Журнал · {day_id.upper()}</div>'
+        f'<h2 class="checkin__title">{title}</h2>'
+        f'<p class="checkin__intro">{intro}</p>'
+        f'<div class="checkin__fields">{"".join(fields_html)}</div>'
+        f'<div class="checkin__actions">'
+        f'<button type="submit" class="checkin__submit">Записати у журнал і отримати код</button>'
+        f'<p class="checkin__status" data-role="status" hidden></p>'
+        f'</div>'
+        f'</form>'
+    )
+
+
 def encrypt_content(plaintext_str, password):
     """Encrypt content with PBKDF2-derived AES-GCM key.
 
@@ -190,6 +269,61 @@ def encrypt_content(plaintext_str, password):
     }
 
 
+def wrap_completion_section(html, day_id):
+    """Wrap the closing "Завершальний код" / "Ти досяг вершини" section in a
+    hidden div that JS unhides after a successful checkin submit.
+    """
+    pattern = re.compile(r'(<h2>(?:Завершальний код|Ти досяг вершини)</h2>)')
+    match = pattern.search(html)
+    if not match:
+        return html
+    start = match.start()
+    return (
+        html[:start]
+        + f'<div class="completion-code" data-day="{day_id}" hidden>'
+        + html[start:]
+        + '</div>'
+    )
+
+
+def inject_supabase_config(js_text, supabase_url, supabase_anon_key, students):
+    """Replace placeholders in app.js / portfolio_app.js with config values."""
+    js_text = js_text.replace("__SUPABASE_URL__", supabase_url or "")
+    js_text = js_text.replace("__SUPABASE_ANON_KEY__", supabase_anon_key or "")
+    js_text = js_text.replace(
+        "__STUDENTS_JSON__",
+        json.dumps(students, ensure_ascii=False),
+    )
+    return js_text
+
+
+def build_portfolio_page(supabase_url, supabase_anon_key, students):
+    """Generate dist/portfolio.html — public portfolio viewer."""
+    tpl = (BUILD / "portfolio_template.html").read_text(encoding="utf-8")
+    styles = (BUILD / "styles.css").read_text(encoding="utf-8")
+    pjs = (BUILD / "portfolio_app.js").read_text(encoding="utf-8")
+
+    pjs = inject_supabase_config(pjs, supabase_url, supabase_anon_key, students)
+    # Pass submission schemas so portfolio knows field labels per day.
+    pages_meta = [{"id": pid, "label": label} for pid, _, label, _, _, _ in PAGES if pid.startswith("day-")]
+    pjs = pjs.replace(
+        "__SUBMISSION_SCHEMAS__",
+        json.dumps(SUBMISSIONS, ensure_ascii=False),
+    )
+    pjs = pjs.replace(
+        "__PAGES_META__",
+        json.dumps(pages_meta, ensure_ascii=False),
+    )
+
+    output = tpl.replace("__STYLES__", styles)
+    output = output.replace("__PORTFOLIO_JS__", pjs)
+
+    out = DIST / "portfolio.html"
+    out.write_text(output, encoding="utf-8")
+    size_kb = out.stat().st_size // 1024
+    print(f"✓ Built {out} ({size_kb} KB)")
+
+
 def main():
     # Load passwords
     if not PASSWORDS_FILE.exists():
@@ -197,6 +331,15 @@ def main():
         passwords = json.loads((ROOT / "passwords.example.json").read_text(encoding="utf-8"))
     else:
         passwords = json.loads(PASSWORDS_FILE.read_text(encoding="utf-8"))
+
+    # Read Supabase config from env (optional — site degrades gracefully)
+    supabase_url = os.environ.get("SUPABASE_URL", "").strip()
+    supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY", "").strip()
+    if supabase_url and supabase_anon_key:
+        print(f"✓ Supabase: {supabase_url[:40]}…")
+    else:
+        print("⚠ Supabase not configured (SUPABASE_URL / SUPABASE_ANON_KEY env unset). "
+              "Site builds but submissions will show an error.")
 
     # Build encrypted map and pages list for JS
     encrypted_map = {}
@@ -222,7 +365,26 @@ def main():
                       f"leaving {{{{UNLOCK_CODE}}}} unresolved")
             else:
                 md_text = md_text.replace("{{UNLOCK_CODE}}", next_code)
+
+        # Day pages: inject checkin form HTML where {{CHECKIN_FORM}} marker sits.
+        # Markdown lets raw HTML pass through, so the form survives md→html.
+        if page_id in SUBMISSIONS:
+            form_html = render_checkin_form(page_id, SUBMISSIONS[page_id])
+            md_text = md_text.replace("{{CHECKIN_FORM}}", form_html)
+
+        # Supervisor dashboard placeholder
+        if page_id == "supervisor":
+            md_text = md_text.replace(
+                "{{SUPERVISOR_DASHBOARD}}",
+                '<div id="supervisor-dashboard" class="supervisor-dashboard"></div>',
+            )
+
         html = md_to_html(md_text)
+
+        # Wrap the "Завершальний код" / "Ти досяг вершини" tail in a hidden div
+        if page_id in SUBMISSIONS:
+            html = wrap_completion_section(html, page_id)
+
         # Inject the magazine-issue hero card at the top of every day page.
         # Replaces the first <h1> so we don't render a duplicate title.
         hero = day_hero_html(page_id, label)
@@ -268,6 +430,9 @@ def main():
     styles = (BUILD / "styles.css").read_text(encoding="utf-8")
     app_js = (BUILD / "app.js").read_text(encoding="utf-8")
 
+    # Inject Supabase + students into app.js
+    app_js = inject_supabase_config(app_js, supabase_url, supabase_anon_key, STUDENTS)
+
     # Inject
     output = template.replace("__STYLES__", styles)
     output = output.replace("__APP_JS__", app_js)
@@ -282,6 +447,9 @@ def main():
     print(f"\n✓ Built {out_path} ({size_kb} KB)")
     print(f"  Pages: {len(pages_list)}")
     print(f"  Main password: '{passwords.get('main', '(not set)')}'")
+
+    # Portfolio page (separate output)
+    build_portfolio_page(supabase_url, supabase_anon_key, STUDENTS)
 
 
 if __name__ == "__main__":

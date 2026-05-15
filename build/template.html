@@ -27,7 +27,19 @@
   </div>
 </div>
 
-<!-- App shell (hidden until login) -->
+<!-- Student picker (shown after login when student_slug is not yet set) -->
+<div id="studentPicker" class="picker" hidden>
+  <div class="picker__bg-blob picker__bg-blob--coral"></div>
+  <div class="picker__bg-blob picker__bg-blob--gold"></div>
+  <div class="picker__card">
+    <div class="picker__eyebrow">КРОК 2 / 2 · Хто ти?</div>
+    <h1 class="picker__title">Підпиши свій <em>журнал</em></h1>
+    <p class="picker__subtitle">Виклади свої здобутки під своїм ім'ям. Це твоє портфоліо в кінці.</p>
+    <div id="studentPickerOptions" class="picker__options"></div>
+  </div>
+</div>
+
+<!-- App shell (hidden until login + student selected) -->
 <div id="app" class="app" hidden>
   <aside class="sidebar">
     <header class="sidebar__brand">
@@ -35,6 +47,7 @@
       <div class="sidebar__brand-name">7 днів<br/>УАЛ × 2026</div>
     </header>
     <nav id="nav" class="nav"></nav>
+    <div id="studentBadge" class="student-badge" hidden></div>
     <button id="logoutBtn" class="logout">Вийти</button>
   </aside>
 

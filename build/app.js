@@ -2,8 +2,17 @@
   'use strict';
 
   // ===========================================================
+  // Build-time config (substituted by build_site.py)
+  // ===========================================================
+  const SUPABASE_URL = '__SUPABASE_URL__';
+  const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
+  const STUDENTS = __STUDENTS_JSON__;
+  const SUPABASE_READY = !!(SUPABASE_URL && SUPABASE_ANON_KEY
+    && !SUPABASE_URL.startsWith('__') && !SUPABASE_ANON_KEY.startsWith('__'));
+
+  // ===========================================================
   // Encrypted data is embedded in <script id="encrypted-data">
-  // Structure: { days: { id: { salt, iv, ct, label, password_hint? }, ... } }
+  // Structure: { pages, encrypted, master_codes }
   // ===========================================================
   const DATA = JSON.parse(document.getElementById('encrypted-data').textContent);
   const PAGES = DATA.pages; // Ordered list of {id, label, locked_by_default}
@@ -23,6 +32,18 @@
   try {
     unlockedDays = JSON.parse(localStorage.getItem('unlocked') || '[]');
   } catch(e) { unlockedDays = []; }
+
+  // Track which days have been checked in (submitted to Supabase)
+  // localStorage cache so we don't refetch on every render
+  let submittedDays = [];
+  try {
+    submittedDays = JSON.parse(localStorage.getItem('submitted') || '[]');
+  } catch(e) { submittedDays = []; }
+
+  // Selected student identity (slug)
+  let studentSlug = localStorage.getItem('student_slug') || null;
+  // Supervisor login skips the picker (set during attemptLogin)
+  let isSupervisor = false;
 
   // ===========================================================
   // Crypto helpers (Web Crypto API)
@@ -69,6 +90,7 @@
   // Login screen
   // ===========================================================
   const loginEl = document.getElementById('login');
+  const pickerEl = document.getElementById('studentPicker');
   const appEl = document.getElementById('app');
   const loginForm = document.getElementById('loginForm');
   const passwordInput = document.getElementById('passwordInput');
@@ -77,24 +99,19 @@
   async function attemptLogin(password) {
     // Main password should unlock pages with "locked_by_default: false"
     const baseUnlocks = PAGES.filter(p => !p.locked_by_default).map(p => p.id);
-    // Test by trying to decrypt the first base page
-    if (baseUnlocks.length === 0) return false;
-    const testId = baseUnlocks[0];
-    const decrypted = await tryDecrypt(testId, password);
-    if (decrypted) {
-      // Store password for these pages
-      baseUnlocks.forEach(id => { storedPasswords[id] = password; });
-      // Also try to decrypt supervisor with same password (in case main == supervisor)
-      // Otherwise skip
-      decryptedCache[testId] = decrypted;
-      // Mark base pages as unlocked
-      baseUnlocks.forEach(id => {
-        if (!unlockedDays.includes(id)) unlockedDays.push(id);
-      });
-      persistState();
-      return true;
+    if (baseUnlocks.length > 0) {
+      const testId = baseUnlocks[0];
+      const decrypted = await tryDecrypt(testId, password);
+      if (decrypted) {
+        baseUnlocks.forEach(id => { storedPasswords[id] = password; });
+        decryptedCache[testId] = decrypted;
+        baseUnlocks.forEach(id => {
+          if (!unlockedDays.includes(id)) unlockedDays.push(id);
+        });
+        persistState();
+        return 'student';
+      }
     }
-    // Also try as supervisor password.
     // Supervisor login unlocks the supervisor page AND every other page,
     // by decrypting the master_codes blob (page_id → page password)
     // that was bundled at build time with the supervisor password.
@@ -121,10 +138,10 @@
         }
 
         persistState();
-        return true;
+        return 'supervisor';
       }
     }
-    return false;
+    return null;
   }
 
   loginForm.addEventListener('submit', async (e) => {
@@ -134,25 +151,80 @@
     const btn = loginForm.querySelector('button');
     btn.disabled = true;
     btn.textContent = 'Перевіряю...';
-    const ok = await attemptLogin(pw);
+    const role = await attemptLogin(pw);
     btn.disabled = false;
     btn.textContent = 'Увійти';
-    if (ok) {
+    if (role === 'supervisor') {
+      isSupervisor = true;
+      localStorage.setItem('is_supervisor', '1');
       enterApp();
+    } else if (role === 'student') {
+      isSupervisor = false;
+      localStorage.removeItem('is_supervisor');
+      // After main-password login, ask which student is sitting at the keyboard
+      if (!studentSlug || !STUDENTS.find(s => s.slug === studentSlug)) {
+        showStudentPicker();
+      } else {
+        enterApp();
+      }
     } else {
       loginError.hidden = false;
       passwordInput.select();
     }
   });
 
+  // ===========================================================
+  // Student picker
+  // ===========================================================
+  function showStudentPicker() {
+    loginEl.hidden = true;
+    pickerEl.hidden = false;
+    const options = document.getElementById('studentPickerOptions');
+    options.innerHTML = '';
+    STUDENTS.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = 'picker__option';
+      btn.style.setProperty('--accent', s.color);
+      btn.innerHTML = `
+        <span class="picker__option-mono">Це я</span>
+        <span class="picker__option-name">${escapeHtml(s.name)}</span>
+        <span class="picker__option-slug">${escapeHtml(s.slug)}</span>
+      `;
+      btn.addEventListener('click', () => {
+        studentSlug = s.slug;
+        localStorage.setItem('student_slug', s.slug);
+        pickerEl.hidden = true;
+        enterApp();
+      });
+      options.appendChild(btn);
+    });
+  }
+
   function enterApp() {
     loginEl.hidden = true;
+    pickerEl.hidden = true;
     appEl.hidden = false;
+    renderStudentBadge();
     renderNav();
     // Navigate to first unlocked page (or page from URL hash)
     const hash = location.hash.slice(1);
     const target = hash && unlockedDays.includes(hash) ? hash : (unlockedDays[0] || PAGES[0].id);
     navigate(target);
+  }
+
+  function renderStudentBadge() {
+    const badge = document.getElementById('studentBadge');
+    if (isSupervisor) {
+      badge.hidden = false;
+      badge.innerHTML = `<span class="student-badge__mono">РЕЖИМ</span><span class="student-badge__name">Керівник</span>`;
+      return;
+    }
+    if (!studentSlug) { badge.hidden = true; return; }
+    const s = STUDENTS.find(x => x.slug === studentSlug);
+    if (!s) { badge.hidden = true; return; }
+    badge.hidden = false;
+    badge.style.setProperty('--accent', s.color);
+    badge.innerHTML = `<span class="student-badge__mono">Підписано як</span><span class="student-badge__name">${escapeHtml(s.name)}</span>`;
   }
 
   // ===========================================================
@@ -162,12 +234,15 @@
     sessionStorage.removeItem('cp');
     storedPasswords = {};
     Object.keys(decryptedCache).forEach(k => delete decryptedCache[k]);
+    // We intentionally keep student_slug + unlocked + submitted in localStorage —
+    // they're not credentials, they're "this is my workbook" state.
     location.reload();
   });
 
   function persistState() {
     sessionStorage.setItem('cp', JSON.stringify(storedPasswords));
     localStorage.setItem('unlocked', JSON.stringify(unlockedDays));
+    localStorage.setItem('submitted', JSON.stringify(submittedDays));
   }
 
   // ===========================================================
@@ -194,7 +269,10 @@
 
     if (start.length) navEl.appendChild(renderGroup('Старт', start.map(renderPlainItem)));
     if (days.length) navEl.appendChild(renderGroup('7 днів', days.map(renderDayRow)));
-    if (internal.length) navEl.appendChild(renderGroup('Внутрішнє', internal.map(renderPlainItem)));
+    // Only show supervisor link if we're actually logged in as supervisor
+    if (internal.length && (isSupervisor || localStorage.getItem('is_supervisor') === '1')) {
+      navEl.appendChild(renderGroup('Внутрішнє', internal.map(renderPlainItem)));
+    }
   }
 
   function renderGroup(label, items) {
@@ -231,17 +309,24 @@
     const isUnlocked = unlockedDays.includes(p.id);
     const isCurrent = p.id === currentPage;
     const isLocked = !isUnlocked;
-    // "Done" means: unlocked AND not the currently-viewed day
-    const isDone = isUnlocked && !isCurrent;
+    const isSubmitted = submittedDays.includes(p.id);
+    // "Done" means: unlocked AND submitted AND not the currently-viewed day
+    const isDone = isUnlocked && isSubmitted && !isCurrent;
 
     const btn = document.createElement('button');
     btn.className = 'day-row';
     if (isDone)    btn.classList.add('day-row--done');
     if (isCurrent) btn.classList.add('day-row--current');
     if (isLocked)  btn.classList.add('day-row--locked');
+    if (isSubmitted && !isCurrent) btn.classList.add('day-row--submitted');
     btn.dataset.pageId = p.id;
 
-    const stateGlyph = isLocked ? '○' : (isCurrent ? '◉' : '●');
+    let stateGlyph;
+    if (isLocked) stateGlyph = '○';
+    else if (isCurrent) stateGlyph = '◉';
+    else if (isSubmitted) stateGlyph = '✓';
+    else stateGlyph = '●';
+
     btn.innerHTML = `
       <span class="day-row__state">${stateGlyph}</span>
       <span class="day-row__num">DAY ${escapeHtml(num)}</span>
@@ -277,11 +362,10 @@
     if (!html) {
       const password = storedPasswords[pageId];
       if (!password) {
-        // Shouldn't happen if unlocked logic is right
         contentEl.innerHTML = '<p>Помилка: пароль для цієї сторінки не знайдено. Спробуй вийти і увійти знову.</p>';
         return;
       }
-      contentEl.innerHTML = '<p style="color:var(--muted)">Розкодовую...</p>';
+      contentEl.innerHTML = '<p style="color:var(--text-muted)">Розкодовую...</p>';
       const decrypted = await tryDecrypt(pageId, password);
       if (decrypted) {
         decryptedCache[pageId] = decrypted;
@@ -292,26 +376,44 @@
       }
     }
     contentEl.innerHTML = html;
+
+    // Wire up checkin form if present
+    const form = contentEl.querySelector('form.checkin');
+    if (form) wireCheckinForm(form);
+
+    // If already submitted, reveal completion-code immediately
+    if (submittedDays.includes(pageId)) {
+      revealCompletion(pageId);
+      if (form) lockCheckinForm(form, 'Вже здано — можеш доповнити і зберегти ще раз.');
+      await hydrateCheckinForm(form, pageId);
+    } else if (form && SUPABASE_READY && studentSlug) {
+      // Even if not in local cache, check Supabase — maybe submitted from another device
+      await hydrateCheckinForm(form, pageId, /* autoReveal */ true);
+    }
+
+    // Supervisor dashboard injection point
+    if (pageId === 'supervisor') {
+      const slot = contentEl.querySelector('#supervisor-dashboard');
+      if (slot) renderSupervisorDashboard(slot);
+    }
   }
 
   function showUnlockPanel(pageId) {
     unlockPanel.hidden = false;
-    const page = PAGES.find(p => p.id === pageId);
-    const hintEl = document.getElementById('unlockHint');
-    if (pageId === 'supervisor') {
-      hintEl.textContent = 'Цей розділ призначено лише для керівника челенджу. Введи supervisor-пароль.';
-    } else {
-      // Find previous day to hint
-      const prevDay = findPreviousDay(pageId);
-      if (prevDay) {
-        hintEl.textContent = `Завершальний код для розблокування — у самому низу сторінки "${prevDay.label}". Дочитай день до кінця і знайдеш його.`;
-      } else {
-        hintEl.textContent = 'Щоб відкрити, введи завершальний код з попереднього дня.';
-      }
-    }
     document.getElementById('unlockInput').value = '';
     document.getElementById('unlockInput').focus();
     document.getElementById('unlockError').hidden = true;
+    const hintEl = document.getElementById('unlockHint');
+    if (pageId === 'supervisor') {
+      hintEl.textContent = 'Цей розділ призначено лише для керівника челенджу. Введи supervisor-пароль.';
+      return;
+    }
+    const prevDay = findPreviousDay(pageId);
+    if (prevDay) {
+      hintEl.textContent = `Завершальний код для розблокування — у самому низу сторінки "${prevDay.label}", але тільки після того, як ти здаси здобутки попереднього дня у журнал.`;
+    } else {
+      hintEl.textContent = 'Щоб відкрити, введи завершальний код з попереднього дня.';
+    }
   }
 
   function findPreviousDay(pageId) {
@@ -353,35 +455,252 @@
   });
 
   // ===========================================================
+  // Checkin form (per-day submission gate)
+  // ===========================================================
+  function wireCheckinForm(form) {
+    const dayId = form.dataset.day;
+    const statusEl = form.querySelector('[data-role="status"]');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      // Native HTML5 validation
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      if (!SUPABASE_READY) {
+        showStatus(statusEl, 'error', 'Журнал не налаштовано — зв\'яжись з керівником (SUPABASE_URL / SUPABASE_ANON_KEY).');
+        return;
+      }
+      if (!studentSlug && !isSupervisor) {
+        showStatus(statusEl, 'error', 'Не визначено, хто здає. Перезавантаж сторінку.');
+        return;
+      }
+      if (isSupervisor) {
+        showStatus(statusEl, 'error', 'Керівник не здає журнал. Увійди як студент.');
+        return;
+      }
+
+      const payload = {};
+      new FormData(form).forEach((v, k) => {
+        payload[k] = (typeof v === 'string') ? v.trim() : v;
+      });
+
+      const submitBtn = form.querySelector('.checkin__submit');
+      submitBtn.disabled = true;
+      const origText = submitBtn.textContent;
+      submitBtn.textContent = 'Зберігаю у журнал...';
+      showStatus(statusEl, 'pending', 'Відправляю у журнал…');
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/submissions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Prefer': 'resolution=merge-duplicates,return=minimal',
+          },
+          body: JSON.stringify({
+            student_slug: studentSlug,
+            day_id: dayId,
+            payload: payload,
+          }),
+        });
+
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          showStatus(statusEl, 'error', `Не вдалось зберегти (${res.status}). ${text || 'Спробуй ще раз.'}`);
+          submitBtn.disabled = false;
+          submitBtn.textContent = origText;
+          return;
+        }
+
+        // Mark as submitted, reveal completion, lock the form
+        if (!submittedDays.includes(dayId)) submittedDays.push(dayId);
+        persistState();
+        revealCompletion(dayId);
+        lockCheckinForm(form, '✓ Записано у журнал. Можеш повернутись пізніше і доповнити — натисни «Зберегти ще раз».');
+        renderNav();
+        // Smooth scroll to the just-revealed completion block
+        const completion = contentEl.querySelector(`.completion-code[data-day="${dayId}"]`);
+        if (completion) completion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (err) {
+        showStatus(statusEl, 'error', `Помилка мережі: ${err.message}. Перевір з'єднання.`);
+        submitBtn.disabled = false;
+        submitBtn.textContent = origText;
+      }
+    });
+  }
+
+  function lockCheckinForm(form, message) {
+    form.classList.add('checkin--submitted');
+    const submitBtn = form.querySelector('.checkin__submit');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Зберегти ще раз';
+    const statusEl = form.querySelector('[data-role="status"]');
+    if (message) showStatus(statusEl, 'success', message);
+  }
+
+  function showStatus(el, kind, text) {
+    if (!el) return;
+    el.hidden = false;
+    el.dataset.kind = kind;
+    el.textContent = text;
+  }
+
+  function revealCompletion(dayId) {
+    const block = contentEl.querySelector(`.completion-code[data-day="${dayId}"]`);
+    if (block) block.hidden = false;
+  }
+
+  async function hydrateCheckinForm(form, dayId, autoReveal) {
+    if (!form || !SUPABASE_READY || !studentSlug) return;
+    try {
+      const url = `${SUPABASE_URL}/rest/v1/submissions`
+        + `?student_slug=eq.${encodeURIComponent(studentSlug)}`
+        + `&day_id=eq.${encodeURIComponent(dayId)}`
+        + `&select=payload,updated_at`;
+      const res = await fetch(url, {
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      });
+      if (!res.ok) return;
+      const rows = await res.json();
+      if (!rows.length) return;
+      const payload = rows[0].payload || {};
+      Object.entries(payload).forEach(([k, v]) => {
+        const input = form.querySelector(`[name="${CSS.escape(k)}"]`);
+        if (input) input.value = v;
+      });
+      if (!submittedDays.includes(dayId)) {
+        submittedDays.push(dayId);
+        persistState();
+        renderNav();
+      }
+      if (autoReveal) {
+        revealCompletion(dayId);
+        lockCheckinForm(form, '✓ Цей день вже здано раніше. Поля заповнено з журналу.');
+      }
+    } catch (e) { /* ignore — best-effort */ }
+  }
+
+  // ===========================================================
+  // Supervisor dashboard
+  // ===========================================================
+  async function renderSupervisorDashboard(slot) {
+    if (!SUPABASE_READY) {
+      slot.innerHTML = '<p class="supervisor-dashboard__warn">Supabase не налаштовано — дашборд порожній.</p>';
+      return;
+    }
+    slot.innerHTML = '<p style="color:var(--text-muted)">Завантажую submissions…</p>';
+    try {
+      const url = `${SUPABASE_URL}/rest/v1/submissions?select=*&order=updated_at.desc`;
+      const res = await fetch(url, {
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      });
+      if (!res.ok) {
+        slot.innerHTML = `<p class="supervisor-dashboard__warn">Не вдалось завантажити (${res.status}).</p>`;
+        return;
+      }
+      const rows = await res.json();
+      const dayIds = PAGES.filter(p => p.id.startsWith('day-')).map(p => p.id);
+
+      // Group by student_slug
+      const grouped = {};
+      STUDENTS.forEach(s => { grouped[s.slug] = {}; });
+      rows.forEach(r => {
+        if (!grouped[r.student_slug]) grouped[r.student_slug] = {};
+        grouped[r.student_slug][r.day_id] = r;
+      });
+
+      let html = '<table class="supervisor-table"><thead><tr><th>Студент</th>';
+      dayIds.forEach(d => { html += `<th>${escapeHtml(d.replace('day-', 'D'))}</th>`; });
+      html += '<th>Портфоліо</th></tr></thead><tbody>';
+
+      STUDENTS.forEach(s => {
+        html += `<tr><td><strong>${escapeHtml(s.name)}</strong><br><span class="supervisor-table__slug">${escapeHtml(s.slug)}</span></td>`;
+        dayIds.forEach(d => {
+          const row = grouped[s.slug] && grouped[s.slug][d];
+          if (row) {
+            const dt = new Date(row.updated_at);
+            const stamp = dt.toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' });
+            html += `<td class="cell--done"><button class="cell-btn" data-student="${escapeHtml(s.slug)}" data-day="${escapeHtml(d)}">✓<span class="cell-stamp">${escapeHtml(stamp)}</span></button></td>`;
+          } else {
+            html += `<td class="cell--empty">○</td>`;
+          }
+        });
+        html += `<td><a class="supervisor-table__portfolio" href="portfolio.html?student=${encodeURIComponent(s.slug)}" target="_blank">портфоліо ↗</a></td>`;
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      html += '<div id="supervisorDetail" class="supervisor-detail" hidden></div>';
+      slot.innerHTML = html;
+
+      // Wire up cell clicks to show submission payload
+      slot.querySelectorAll('.cell-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const slug = btn.dataset.student;
+          const dayId = btn.dataset.day;
+          const row = grouped[slug] && grouped[slug][dayId];
+          const detail = slot.querySelector('#supervisorDetail');
+          if (!row || !detail) return;
+          detail.hidden = false;
+          const student = STUDENTS.find(s => s.slug === slug);
+          let payloadHtml = '';
+          for (const [k, v] of Object.entries(row.payload || {})) {
+            const isUrl = typeof v === 'string' && /^https?:\/\//i.test(v);
+            const valueHtml = isUrl
+              ? `<a href="${escapeHtml(v)}" target="_blank" rel="noopener">${escapeHtml(v)}</a>`
+              : `<span>${escapeHtml(String(v)).replace(/\n/g, '<br>')}</span>`;
+            payloadHtml += `<div class="supervisor-detail__row"><div class="supervisor-detail__key">${escapeHtml(k)}</div><div class="supervisor-detail__val">${valueHtml}</div></div>`;
+          }
+          detail.innerHTML = `
+            <div class="supervisor-detail__head">
+              <h3>${escapeHtml(student ? student.name : slug)} · ${escapeHtml(dayId)}</h3>
+              <div class="supervisor-detail__meta">${escapeHtml(new Date(row.updated_at).toLocaleString('uk-UA'))}</div>
+            </div>
+            <div class="supervisor-detail__body">${payloadHtml}</div>
+          `;
+          detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+    } catch (e) {
+      slot.innerHTML = `<p class="supervisor-dashboard__warn">Помилка: ${escapeHtml(e.message)}</p>`;
+    }
+  }
+
+  // ===========================================================
   // Utilities
   // ===========================================================
   function escapeHtml(s) {
-    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
   // ===========================================================
   // Auto-login if we have stored password for any page
   // ===========================================================
   (async function init() {
-    // If we have any stored password, try to enter app
+    isSupervisor = localStorage.getItem('is_supervisor') === '1';
     const hasStored = Object.keys(storedPasswords).length > 0;
     if (hasStored && unlockedDays.length > 0) {
-      // Verify by re-decrypting first unlocked page
       const firstId = unlockedDays[0];
       const pw = storedPasswords[firstId];
       if (pw) {
         const ok = await tryDecrypt(firstId, pw);
         if (ok) {
           decryptedCache[firstId] = ok;
+          if (!isSupervisor && (!studentSlug || !STUDENTS.find(s => s.slug === studentSlug))) {
+            showStudentPicker();
+            return;
+          }
           enterApp();
           return;
         }
       }
     }
-    // Stay on login screen
   })();
 
-  // Listen to hash changes for direct linking
   window.addEventListener('hashchange', () => {
     if (appEl.hidden) return;
     const target = location.hash.slice(1);
