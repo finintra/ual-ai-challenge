@@ -16,18 +16,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 │   ├── overview.md
 │   ├── day-1.md … day-7.md
 │   ├── journal.md         ← Бортовий журнал (Notion-шаблон)
-│   └── supervisor.md      ← внутрішнє для керівника (всі коди)
+│   └── supervisor.md      ← внутрішнє для керівника (коди + дашборд)
 ├── build/
-│   ├── build_site.py      ← основний build (markdown → encrypted HTML)
-│   ├── template.html      ← HTML-каркас (login + sidebar + content)
-│   ├── styles.css         ← editorial-естетика, винесена з Python
-│   └── app.js             ← логіка login + quest-розблокування
+│   ├── build_site.py             ← основний build (markdown → encrypted HTML + portfolio)
+│   ├── submissions.py            ← схеми чек-ін форм по днях + список студентів
+│   ├── template.html             ← HTML-каркас (login + student picker + sidebar + content)
+│   ├── portfolio_template.html   ← HTML каркас публічної сторінки портфоліо
+│   ├── styles.css                ← editorial-естетика
+│   ├── app.js                    ← логіка login + quest + checkin form + supervisor
+│   └── portfolio_app.js          ← логіка публічного портфоліо (fetch з Supabase)
+├── supabase/
+│   └── schema.sql         ← одноразовий SQL для накатки таблиці submissions
 ├── passwords.example.json ← шаблон з прикладами
 ├── passwords.json         ← реальні паролі (gitignored)
 ├── .github/workflows/
 │   └── pages.yml          ← авто-деплой на GitHub Pages при push
 └── dist/                  ← вихід білда (gitignored)
-    └── index.html         ← фінальний single-file сайт
+    ├── index.html         ← фінальний single-file челендж
+    └── portfolio.html     ← публічна сторінка портфоліо
 ```
 
 ## Тех-стек і чому
@@ -42,14 +48,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Стан квесту.** `localStorage.unlocked_days = ["overview","day-1","journal"]` після першого логіну. Кожен код, який юзер вводить, спробує задекриптувати кожен ще не розблокований день. Успішна декрипція → день додається до unlocked_days і стає клікабельним у сайдбарі.
 
+**Submission gate.** Кожен день має чек-ін форму (`{{CHECKIN_FORM}}` у markdown → render з `build/submissions.py`). Без успішного submit-у блок "Завершальний код" не показується (обгорнутий `<div class="completion-code" hidden>`). Submit POST-иться у Supabase `submissions(student_slug, day_id, payload jsonb)`. Upsert через `Prefer: resolution=merge-duplicates`.
+
+**Identity.** Після успішного main-логіну, якщо `localStorage.student_slug` порожній — показується student picker (список з `STUDENTS` у `build/submissions.py`). Supervisor-логін picker пропускає.
+
+**Portfolio.** Окрема публічна сторінка `dist/portfolio.html?student=<slug>` (без логіну). `portfolio_app.js` робить `GET /rest/v1/submissions?student_slug=eq.X` з anon key і рендерить картки по днях. URL шерабельне у LinkedIn.
+
 ## Build contract (що з чим пов'язано)
 
 Цей розділ описує невидимі залежності, які білд **не** валідує — їх легко зламати редагуванням контенту.
 
-- **`PAGES` у `build/build_site.py` (рядки 37-48) — єдине джерело правди** про те, які markdown-файли потрапляють у білд, які лейбли показуються у сайдбарі, який ключ з `passwords.json` шифрує кожну сторінку, і чи заблокована вона за замовчуванням. Додати нову сторінку = дописати кортеж сюди.
+- **`PAGES` у `build/build_site.py` — єдине джерело правди** про те, які markdown-файли потрапляють у білд, які лейбли показуються у сайдбарі, який ключ з `passwords.json` шифрує кожну сторінку, і чи заблокована вона за замовчуванням. Додати нову сторінку = дописати кортеж сюди.
 - **"Завершальний код" у кінці `content/day-N.md` повинен побайтово дорівнювати `passwords.json["day-(N+1)"]`.** Білд НЕ перевіряє це — побачиш помилку лише коли клацнеш на наступний день у браузері і код не підійде. Зміна одного — обов'язково зміна іншого.
-- **`section_classes` у `build/build_site.py` (рядки 75-89) — whitelist H3-заголовків**, які отримують semantic-CSS-класи. Якщо додаєш нову `### Назву секції` у контент — додай запис сюди, інакше H3 рендериться без стилю.
+- **`section_classes` у `build/build_site.py` — whitelist H3-заголовків**, які отримують semantic-CSS-класи. Якщо додаєш нову `### Назву секції` у контент — додай запис сюди, інакше H3 рендериться без стилю.
 - **`passwords.example.json` має ключ `"completion"`**, який не використовується як `pw_key` жодної сторінки у `PAGES`. Його значення підставляється у `content/day-7.md` через `{{UNLOCK_CODE}}` (це фінальний код "Челендж пройдено"). Якщо хочеш окрему сторінку-фініш — додай тупл у `PAGES`.
+- **`{{CHECKIN_FORM}}` placeholder у `content/day-N.md` обов'язковий**, якщо хочеш чек-ін форму. `build_site.py` шукає його і вставляє згенерований `<form>`. Без placeholder — день не вимагає здачі (і код наступного дня не буде заблокований формою, але код все одно у hidden-блоці що unhide на submit — отже без `{{CHECKIN_FORM}}` користувач застрягне).
+- **`SUBMISSIONS["day-N"]` у `build/submissions.py`** — схема полів для чек-ін форми. Якщо додаєш нове поле — додай key+label+type. `payload` у Supabase — JSONB, схема не мігрує.
+- **`{{SUPERVISOR_DASHBOARD}}` у `content/supervisor.md`** — інжектиться через білд як `<div id="supervisor-dashboard">`, app.js фетчить submissions при рендері сторінки.
 
 ## Gamification: квест-механіка
 
@@ -71,8 +86,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 У markdown-контенті використовуються плейсхолдери, які `build_site.py` підставляє на білді:
 - `{{UNLOCK_CODE}}` — у кінці кожного `day-N.md` (підставляється кодом наступного дня)
 - `{{CODE:<key>}}` — універсальний (наприклад, `{{CODE:day-3}}` у `supervisor.md`)
+- `{{CHECKIN_FORM}}` — у `day-N.md` перед "Завершальний код"; підставляється чек-ін формою
+- `{{SUPERVISOR_DASHBOARD}}` — у `supervisor.md`; підставляється контейнером дашборду
 
-Учасник дочитує день → бачить вже-підставлений код → вводить у сайдбарі біля наступного дня → розблоковує. `supervisor.md` має повний список кодів (всі підставлені на білді) плюс інструкції для керівника.
+Flow з submission-gating: учасник дочитує день → бачить чек-ін форму → здає артефакти (Google Doc URLs, рефлексії) → submit POSTиться у Supabase → form замінюється на блок з кодом наступного дня → юзер копіює і вводить у сайдбарі → розблоковує наступний день. `supervisor.md` має повний список кодів + дашборд submissions.
 
 ## Як редагувати контент
 
@@ -114,9 +131,30 @@ cd dist && python3 -m http.server 8000
 pip install markdown cryptography
 ```
 
+**Локальний preview з submissions:** треба експортувати Supabase env-и до білда, інакше форми покажуть "журнал не налаштовано":
+```bash
+export SUPABASE_URL='https://xxx.supabase.co'
+export SUPABASE_ANON_KEY='eyJ...'
+python3 build/build_site.py
+```
+
 **Deploy.** Push у main → GitHub Actions автоматично деплоїть `dist/` на GitHub Pages. Workflow у `.github/workflows/pages.yml`.
 
 **Тести / лінт.** Відсутні. Сайт перевіряється вручну: збираємо, відкриваємо preview, проходимо квест-ланцюг кодами.
+
+## Supabase setup (одноразово, для submissions)
+
+1. Створи проект на [app.supabase.com](https://app.supabase.com) (Free tier OK).
+2. SQL Editor → постав вміст `supabase/schema.sql` → Run.
+3. Project Settings → API → скопіюй `Project URL` і `anon public` ключ.
+4. У GitHub repo → Settings → Secrets and variables → Actions → додай:
+   - `SUPABASE_URL` = `https://xxx.supabase.co`
+   - `SUPABASE_ANON_KEY` = `eyJ...` (anon key, не service role!)
+5. Push → workflow збере сайт з ендоінтом і ключем, інжекченими у app.js / portfolio_app.js.
+
+Якщо secrets відсутні — білд проходить, але checkin форми показують помилку про "журнал не налаштовано", а portfolio сторінка — повідомлення про конфіг.
+
+Schema проста: одна таблиця `submissions(student_slug, day_id, payload jsonb)` з `unique(student_slug, day_id)`. Upsert через `Prefer: resolution=merge-duplicates`. RLS — open для anon (закритий челендж на 2 студентів; якщо потрібен жорсткіший контроль — переключи policy у `supabase/schema.sql`).
 
 ## Зміна паролів
 
