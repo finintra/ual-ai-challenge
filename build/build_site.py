@@ -459,11 +459,15 @@ def main():
             form_html = render_checkin_form(page_id, SUBMISSIONS[page_id])
             md_text = md_text.replace("{{CHECKIN_FORM}}", form_html)
 
-        # Supervisor dashboard placeholder
+        # Supervisor placeholders
         if page_id == "supervisor":
             md_text = md_text.replace(
                 "{{SUPERVISOR_DASHBOARD}}",
                 '<div id="supervisor-dashboard" class="supervisor-dashboard"></div>',
+            )
+            md_text = md_text.replace(
+                "{{STUDENTS_ADMIN}}",
+                '<div id="students-admin" class="students-admin"></div>',
             )
 
         html = md_to_html(md_text)

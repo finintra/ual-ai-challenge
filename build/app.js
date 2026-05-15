@@ -6,10 +6,55 @@
   // ===========================================================
   const SUPABASE_URL = '__SUPABASE_URL__';
   const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
-  const STUDENTS = __STUDENTS_JSON__;
+  // Build-time embedded students — used as seed if Supabase has none
+  // and as fallback when Supabase is unavailable. Mutable at runtime
+  // because we replace it with the live list after a successful fetch.
+  let STUDENTS = __STUDENTS_JSON__;
   const SUBMISSION_SCHEMAS = __SUBMISSION_SCHEMAS__;
   const SUPABASE_READY = !!(SUPABASE_URL && SUPABASE_ANON_KEY
     && !SUPABASE_URL.startsWith('__') && !SUPABASE_ANON_KEY.startsWith('__'));
+
+  // ===========================================================
+  // Supabase REST helpers (students table)
+  // ===========================================================
+  function supaHeaders(extra) {
+    const h = {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json',
+    };
+    if (extra) Object.assign(h, extra);
+    return h;
+  }
+
+  async function fetchStudents() {
+    if (!SUPABASE_READY) return null;
+    try {
+      const res = await fetch(
+        SUPABASE_URL + '/rest/v1/students?select=*&order=created_at.asc',
+        { headers: supaHeaders() }
+      );
+      if (!res.ok) return null;
+      const rows = await res.json();
+      // Normalize: rename DB color → in-memory color (already same key); ensure shape
+      return rows.map(r => ({
+        slug: r.slug,
+        name: r.name,
+        color: r.color || '#FF5A3D',
+      }));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function refreshStudents() {
+    const live = await fetchStudents();
+    if (live && live.length) {
+      STUDENTS = live;
+      renderStudentBadge();
+    }
+    return STUDENTS;
+  }
 
   // ===========================================================
   // Theme toggle — initial value already applied in <head> to avoid FOUC.
@@ -196,10 +241,12 @@
   // ===========================================================
   // Student picker
   // ===========================================================
-  function showStudentPicker() {
+  async function showStudentPicker() {
     loginEl.hidden = true;
     pickerEl.hidden = false;
     const options = document.getElementById('studentPickerOptions');
+    options.innerHTML = '<p class="picker__loading">Завантажую список…</p>';
+    await refreshStudents();
     options.innerHTML = '';
     STUDENTS.forEach(s => {
       const btn = document.createElement('button');
@@ -226,6 +273,14 @@
     appEl.hidden = false;
     renderStudentBadge();
     renderNav();
+    // Background refresh — keeps badge name in sync if admin renamed us
+    refreshStudents().then(() => {
+      renderStudentBadge();
+      // If our slug got removed from the registry, drop local identity
+      if (studentSlug && !STUDENTS.find(s => s.slug === studentSlug) && !isSupervisor) {
+        localStorage.removeItem('student_slug');
+      }
+    });
     // Navigate to first unlocked page (or page from URL hash)
     const hash = location.hash.slice(1);
     const target = hash && unlockedDays.includes(hash) ? hash : (unlockedDays[0] || PAGES[0].id);
@@ -418,6 +473,8 @@
     if (pageId === 'supervisor') {
       const slot = contentEl.querySelector('#supervisor-dashboard');
       if (slot) renderSupervisorDashboard(slot);
+      const studentsSlot = contentEl.querySelector('#students-admin');
+      if (studentsSlot) renderStudentsAdmin(studentsSlot);
     }
   }
 
@@ -730,6 +787,161 @@
     filterStudent: 'all',
     openCardId: null, // submission id that's currently expanded
   };
+
+  // ===========================================================
+  // Supervisor: students admin (CRUD на public.students)
+  // ===========================================================
+  function studentsAdminMarkup() {
+    const rows = STUDENTS.map(s => `
+      <tr data-slug="${escapeHtml(s.slug)}">
+        <td>
+          <input class="students-admin__input" data-field="name"
+                 type="text" value="${escapeHtml(s.name)}" />
+        </td>
+        <td>
+          <code class="students-admin__slug">${escapeHtml(s.slug)}</code>
+        </td>
+        <td>
+          <input class="students-admin__input students-admin__color"
+                 data-field="color" type="color" value="${escapeHtml(s.color)}" />
+        </td>
+        <td class="students-admin__actions">
+          <button type="button" class="students-admin__btn" data-action="save">Зберегти</button>
+          <button type="button" class="students-admin__btn students-admin__btn--danger"
+                  data-action="delete">Видалити</button>
+        </td>
+      </tr>
+    `).join('');
+    return `
+      <div class="students-admin__head">
+        <h3 class="students-admin__title">Студенти челенджу</h3>
+        <p class="students-admin__intro">
+          Додавай, перейменовуй і видаляй учасників. Slug — внутрішній ідентифікатор
+          для URL портфоліо (<code>portfolio.html?student=&lt;slug&gt;</code>) та
+          submissions. Slug міняти не можна — створи нового студента і скопіюй роботи руками.
+        </p>
+      </div>
+      <table class="students-admin__table">
+        <thead>
+          <tr>
+            <th>Ім'я</th>
+            <th>Slug</th>
+            <th>Колір</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows || '<tr><td colspan="4" class="students-admin__empty">Поки нікого. Додай нижче.</td></tr>'}</tbody>
+      </table>
+      <div class="students-admin__add">
+        <h4 class="students-admin__subhead">Додати студента</h4>
+        <div class="students-admin__add-row">
+          <input class="students-admin__input" data-add="name" type="text"
+                 placeholder="Ім'я (напр. Олексій)" />
+          <input class="students-admin__input" data-add="slug" type="text"
+                 placeholder="slug (latin, напр. oleksiy)" autocomplete="off" />
+          <input class="students-admin__input students-admin__color" data-add="color"
+                 type="color" value="#FF5A3D" />
+          <button type="button" class="students-admin__btn students-admin__btn--primary"
+                  data-add-submit>Додати</button>
+        </div>
+        <p class="students-admin__status" data-role="add-status" hidden></p>
+      </div>
+    `;
+  }
+
+  function renderStudentsAdmin(slot) {
+    if (!SUPABASE_READY) {
+      slot.innerHTML = '<p class="supervisor-dashboard__warn">Supabase не налаштовано — реєстр студентів недоступний.</p>';
+      return;
+    }
+    slot.innerHTML = '<p style="color:var(--text-muted)">Завантажую…</p>';
+    refreshStudents().then(() => {
+      slot.innerHTML = studentsAdminMarkup();
+      wireStudentsAdmin(slot);
+    });
+  }
+
+  function wireStudentsAdmin(slot) {
+    // Per-row save / delete
+    slot.querySelectorAll('tr[data-slug]').forEach(tr => {
+      const slug = tr.dataset.slug;
+      tr.querySelector('[data-action="save"]').addEventListener('click', async () => {
+        const name = tr.querySelector('[data-field="name"]').value.trim();
+        const color = tr.querySelector('[data-field="color"]').value;
+        if (!name) return;
+        const btn = tr.querySelector('[data-action="save"]');
+        btn.disabled = true; btn.textContent = '…';
+        const ok = await updateStudent(slug, { name, color });
+        btn.textContent = ok ? '✓' : 'помилка';
+        await refreshStudents();
+        renderStudentsAdmin(slot);
+      });
+      tr.querySelector('[data-action="delete"]').addEventListener('click', async () => {
+        if (!confirm('Видалити студента "' + slug + '"? Submissions його залишаться, але без імені у picker-і.')) return;
+        const ok = await deleteStudent(slug);
+        if (!ok) { alert('Не вдалось видалити'); return; }
+        await refreshStudents();
+        renderStudentsAdmin(slot);
+      });
+    });
+    // Add new
+    const addBtn = slot.querySelector('[data-add-submit]');
+    if (addBtn) {
+      addBtn.addEventListener('click', async () => {
+        const name = slot.querySelector('[data-add="name"]').value.trim();
+        const slug = slot.querySelector('[data-add="slug"]').value.trim().toLowerCase();
+        const color = slot.querySelector('[data-add="color"]').value;
+        const status = slot.querySelector('[data-role="add-status"]');
+        const showStatus = (msg, ok) => {
+          status.textContent = msg;
+          status.hidden = false;
+          status.dataset.ok = ok ? '1' : '0';
+        };
+        if (!name || !slug) { showStatus('Заповни ім\'я і slug', false); return; }
+        if (!/^[a-z0-9-]+$/.test(slug)) { showStatus('Slug — лише latin, цифри і "-"', false); return; }
+        addBtn.disabled = true;
+        const ok = await insertStudent({ slug, name, color });
+        addBtn.disabled = false;
+        if (!ok) { showStatus('Не вдалось додати (можливо slug вже існує)', false); return; }
+        showStatus('Додано', true);
+        await refreshStudents();
+        renderStudentsAdmin(slot);
+      });
+    }
+  }
+
+  async function insertStudent(rec) {
+    try {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/students', {
+        method: 'POST',
+        headers: supaHeaders({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify(rec),
+      });
+      return res.ok;
+    } catch (e) { return false; }
+  }
+  async function updateStudent(slug, patch) {
+    try {
+      const res = await fetch(
+        SUPABASE_URL + '/rest/v1/students?slug=eq.' + encodeURIComponent(slug),
+        {
+          method: 'PATCH',
+          headers: supaHeaders({ 'Prefer': 'return=minimal' }),
+          body: JSON.stringify(patch),
+        }
+      );
+      return res.ok;
+    } catch (e) { return false; }
+  }
+  async function deleteStudent(slug) {
+    try {
+      const res = await fetch(
+        SUPABASE_URL + '/rest/v1/students?slug=eq.' + encodeURIComponent(slug),
+        { method: 'DELETE', headers: supaHeaders() }
+      );
+      return res.ok;
+    } catch (e) { return false; }
+  }
 
   async function renderSupervisorDashboard(slot) {
     if (!SUPABASE_READY) {
