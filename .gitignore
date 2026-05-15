@@ -21,3 +21,4 @@ venv/
 # Playwright
 test-results/
 playwright-report/
+.lazyweb/

@@ -124,6 +124,46 @@ def md_to_html(md_text):
     return html
 
 
+def day_hero_html(page_id, label, total_days=7):
+    """Build the magazine-issue hero card injected at top of each day page.
+
+    Replaces the page's first <h1> when present so we don't get duplicate titles.
+    Returns empty string for non-day pages.
+    """
+    if not page_id.startswith("day-"):
+        return ""
+    try:
+        n = int(page_id.split("-", 1)[1])
+    except ValueError:
+        return ""
+
+    # label looks like "День 7 · Пітч" — extract the theme word after " · "
+    parts = label.split(" · ", 1)
+    theme = parts[1] if len(parts) > 1 else label
+
+    # Progress dots: 1..total_days; current = n, done = <n, locked = >n
+    dots = []
+    for i in range(1, total_days + 1):
+        cls = "day-hero__dot"
+        if i < n:
+            cls += " day-hero__dot--done"
+        elif i == n:
+            cls += " day-hero__dot--current"
+        dots.append(f'<span class="{cls}"></span>')
+
+    return (
+        '<div class="day-hero">'
+        f'<div class="day-hero__eyebrow">Випуск {n:02d} / {total_days:02d}</div>'
+        f'<h1 class="day-hero__theme">{theme}</h1>'
+        f'<p class="day-hero__tagline">День {n} з {total_days}</p>'
+        '<div class="day-hero__progress">'
+        f'<span>Прогрес</span>'
+        f'<span class="day-hero__dots">{"".join(dots)}</span>'
+        '</div>'
+        '</div>'
+    )
+
+
 def encrypt_content(plaintext_str, password):
     """Encrypt content with PBKDF2-derived AES-GCM key.
 
@@ -183,6 +223,12 @@ def main():
             else:
                 md_text = md_text.replace("{{UNLOCK_CODE}}", next_code)
         html = md_to_html(md_text)
+        # Inject the magazine-issue hero card at the top of every day page.
+        # Replaces the first <h1> so we don't render a duplicate title.
+        hero = day_hero_html(page_id, label)
+        if hero:
+            html_with_hero, n_subs = re.subn(r"<h1>.*?</h1>", hero, html, count=1)
+            html = html_with_hero if n_subs else hero + html
         password = passwords.get(pw_key)
         if not password:
             print(f"  ⚠ no password for key '{pw_key}', skipping {fname}")

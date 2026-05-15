@@ -178,18 +178,77 @@
 
   function renderNav() {
     navEl.innerHTML = '';
+
+    // Partition pages into 3 groups:
+    //   start   — overview, journal (locked_by_default: false)
+    //   days    — day-1 … day-7 (id starts with "day-")
+    //   internal — supervisor (and anything else)
+    const start = [];
+    const days = [];
+    const internal = [];
     PAGES.forEach(p => {
-      const btn = document.createElement('button');
-      btn.className = 'nav__item';
-      const isUnlocked = unlockedDays.includes(p.id);
-      const isLocked = !isUnlocked;
-      if (isLocked) btn.classList.add('nav__item--locked');
-      if (p.id === currentPage) btn.classList.add('nav__item--active');
-      btn.dataset.pageId = p.id;
-      btn.innerHTML = `<span class="nav__label">${escapeHtml(p.label)}</span>${isLocked ? '<span class="nav__lock">🔒</span>' : ''}`;
-      btn.addEventListener('click', () => navigate(p.id));
-      navEl.appendChild(btn);
+      if (p.id.startsWith('day-')) days.push(p);
+      else if (p.id === 'supervisor') internal.push(p);
+      else start.push(p);
     });
+
+    if (start.length) navEl.appendChild(renderGroup('Старт', start.map(renderPlainItem)));
+    if (days.length) navEl.appendChild(renderGroup('7 днів', days.map(renderDayRow)));
+    if (internal.length) navEl.appendChild(renderGroup('Внутрішнє', internal.map(renderPlainItem)));
+  }
+
+  function renderGroup(label, items) {
+    const group = document.createElement('div');
+    group.className = 'nav__group';
+    if (label) {
+      const lbl = document.createElement('div');
+      lbl.className = 'nav__group-label';
+      lbl.textContent = label;
+      group.appendChild(lbl);
+    }
+    items.forEach(el => group.appendChild(el));
+    return group;
+  }
+
+  function renderPlainItem(p) {
+    const btn = document.createElement('button');
+    btn.className = 'nav__item';
+    const isUnlocked = unlockedDays.includes(p.id);
+    if (!isUnlocked) btn.classList.add('nav__item--locked');
+    if (p.id === currentPage) btn.classList.add('nav__item--active');
+    btn.dataset.pageId = p.id;
+    btn.innerHTML = `<span class="nav__label">${escapeHtml(p.label)}</span>${!isUnlocked ? '<span class="nav__lock">○</span>' : ''}`;
+    btn.addEventListener('click', () => navigate(p.id));
+    return btn;
+  }
+
+  function renderDayRow(p) {
+    // Parse "День N · Theme" → number + theme
+    const m = p.label.match(/^День\s+(\d+)\s*·\s*(.+)$/);
+    const num = m ? m[1].padStart(2, '0') : '';
+    const theme = m ? m[2] : p.label;
+
+    const isUnlocked = unlockedDays.includes(p.id);
+    const isCurrent = p.id === currentPage;
+    const isLocked = !isUnlocked;
+    // "Done" means: unlocked AND not the currently-viewed day
+    const isDone = isUnlocked && !isCurrent;
+
+    const btn = document.createElement('button');
+    btn.className = 'day-row';
+    if (isDone)    btn.classList.add('day-row--done');
+    if (isCurrent) btn.classList.add('day-row--current');
+    if (isLocked)  btn.classList.add('day-row--locked');
+    btn.dataset.pageId = p.id;
+
+    const stateGlyph = isLocked ? '○' : (isCurrent ? '◉' : '●');
+    btn.innerHTML = `
+      <span class="day-row__state">${stateGlyph}</span>
+      <span class="day-row__num">DAY ${escapeHtml(num)}</span>
+      <span class="day-row__theme">${escapeHtml(theme)}</span>
+    `;
+    btn.addEventListener('click', () => navigate(p.id));
+    return btn;
   }
 
   // ===========================================================
