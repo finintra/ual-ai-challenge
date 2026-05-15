@@ -1,0 +1,62 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install markdown cryptography
+
+      - name: Setup passwords from secret
+        env:
+          PASSWORDS_JSON: ${{ secrets.PASSWORDS_JSON }}
+        run: |
+          # Use passwords from secret if available, else use checked-in passwords.json
+          if [ -n "$PASSWORDS_JSON" ]; then
+            echo "$PASSWORDS_JSON" > passwords.json
+            echo "Using passwords from secret"
+          elif [ -f passwords.json ]; then
+            echo "Using passwords.json from repo"
+          else
+            cp passwords.example.json passwords.json
+            echo "Using passwords.example.json as fallback"
+          fi
+
+      - name: Build site
+        run: python3 build/build_site.py
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'dist'
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

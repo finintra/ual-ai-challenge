@@ -1,0 +1,23 @@
+# Secrets
+passwords.json
+
+# Build output
+dist/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Playwright
+test-results/
+playwright-report/
