@@ -196,10 +196,25 @@ def main():
         size_kb = len(html) // 1024
         print(f"  ✓ {fname} → {page_id} (key: {pw_key}, {size_kb} KB plaintext)")
 
+    # Master codes bundle: page_id → password, encrypted with supervisor password.
+    # Lets supervisor unlock everything in one login instead of per-page code entry.
+    master_codes = None
+    sup_password = passwords.get("supervisor")
+    if sup_password:
+        page_creds = {}
+        for page_id, _, _, pw_key, _, _ in PAGES:
+            page_pw = passwords.get(pw_key)
+            if page_pw and page_id in encrypted_map:
+                page_creds[page_id] = page_pw
+        if page_creds:
+            master_codes = encrypt_content(json.dumps(page_creds), sup_password)
+            print(f"  ✓ master_codes blob ({len(page_creds)} entries, encrypted with supervisor key)")
+
     # Bundle JSON
     data_json = json.dumps({
         "pages": pages_list,
         "encrypted": encrypted_map,
+        "master_codes": master_codes,
     }, ensure_ascii=False, separators=(",", ":"))
 
     # Read template parts

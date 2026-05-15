@@ -47,8 +47,7 @@
     );
   }
 
-  async function tryDecrypt(pageId, password) {
-    const entry = ENC[pageId];
+  async function tryDecryptBlob(entry, password) {
     if (!entry) return null;
     try {
       const salt = base64ToBytes(entry.salt);
@@ -60,6 +59,10 @@
     } catch (e) {
       return null;
     }
+  }
+
+  async function tryDecrypt(pageId, password) {
+    return tryDecryptBlob(ENC[pageId], password);
   }
 
   // ===========================================================
@@ -91,7 +94,10 @@
       persistState();
       return true;
     }
-    // Also try as supervisor password (only unlocks supervisor)
+    // Also try as supervisor password.
+    // Supervisor login unlocks the supervisor page AND every other page,
+    // by decrypting the master_codes blob (page_id → page password)
+    // that was bundled at build time with the supervisor password.
     const supId = 'supervisor';
     if (ENC[supId]) {
       const sup = await tryDecrypt(supId, password);
@@ -99,6 +105,21 @@
         storedPasswords[supId] = password;
         decryptedCache[supId] = sup;
         if (!unlockedDays.includes(supId)) unlockedDays.push(supId);
+
+        if (DATA.master_codes) {
+          const masterJson = await tryDecryptBlob(DATA.master_codes, password);
+          if (masterJson) {
+            try {
+              const creds = JSON.parse(masterJson);
+              for (const pid in creds) {
+                if (!Object.prototype.hasOwnProperty.call(creds, pid)) continue;
+                storedPasswords[pid] = creds[pid];
+                if (!unlockedDays.includes(pid)) unlockedDays.push(pid);
+              }
+            } catch (e) { /* leave supervisor-only access */ }
+          }
+        }
+
         persistState();
         return true;
       }
