@@ -97,7 +97,6 @@ def md_to_html(md_text):
         "Арсенал": "tools",
         "Покрокова інструкція і шаблони": "howto",
         "Здобутки дня": "output",
-        "Розподіл часу": "schedule",
         "Пастки і поради": "pitfalls",
         "Debrief": "reflection",
         "Debrief (мета-рівень за всі 8 днів)": "reflection",
@@ -188,7 +187,6 @@ DAY_BLOCKS = [
     ("theory",    "Теорія",      ["Лекційна частина"]),
     ("practice",  "Практика",    ["Місія", "Факультативні задачі", "Арсенал", "Покрокова інструкція і шаблони"]),
     ("artifacts", "Артефакти",   ["Здобутки дня"]),
-    ("schedule",  "Розклад дня", ["Розподіл часу"]),
     ("advice",    "Поради",      ["Пастки і поради"]),
     ("debrief",   "Debrief",     ["Debrief", "Debrief (мета-рівень за всі 7 днів)", "Debrief (мета-рівень за всі 8 днів)"]),
     ("checkpoint", "CheckPoint", []),  # special: triggered by checkin form / completion-code
