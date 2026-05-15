@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # AI Challenge · УАЛ-Ужгород
 
 Це методичка для 7-денного AI Challenge, який Арсеній проводить як практику для двох студентів УАЛ-Ужгород. Зараз робота над контентом триває, плюс розгорнута gamified-механіка: кожен день розблоковує наступний через скаут-кодові слова.
@@ -15,7 +19,6 @@
 │   └── supervisor.md      ← внутрішнє для керівника (всі коди)
 ├── build/
 │   ├── build_site.py      ← основний build (markdown → encrypted HTML)
-│   ├── build_pdf.py       ← опціональний (генерація PDF через Playwright)
 │   ├── template.html      ← HTML-каркас (login + sidebar + content)
 │   ├── styles.css         ← editorial-естетика, винесена з Python
 │   └── app.js             ← логіка login + quest-розблокування
@@ -38,6 +41,15 @@
 **Шифрування.** Кожен день шифрується власним паролем (з `passwords.json`) через PBKDF2-SHA256 (200k ітерацій) + AES-GCM. Salt і IV випадкові на кожному build. Web Crypto API у браузері декриптує клієнтсайд.
 
 **Стан квесту.** `localStorage.unlocked_days = ["overview","day-1","journal"]` після першого логіну. Кожен код, який юзер вводить, спробує задекриптувати кожен ще не розблокований день. Успішна декрипція → день додається до unlocked_days і стає клікабельним у сайдбарі.
+
+## Build contract (що з чим пов'язано)
+
+Цей розділ описує невидимі залежності, які білд **не** валідує — їх легко зламати редагуванням контенту.
+
+- **`PAGES` у `build/build_site.py` (рядки 37-48) — єдине джерело правди** про те, які markdown-файли потрапляють у білд, які лейбли показуються у сайдбарі, який ключ з `passwords.json` шифрує кожну сторінку, і чи заблокована вона за замовчуванням. Додати нову сторінку = дописати кортеж сюди.
+- **"Завершальний код" у кінці `content/day-N.md` повинен побайтово дорівнювати `passwords.json["day-(N+1)"]`.** Білд НЕ перевіряє це — побачиш помилку лише коли клацнеш на наступний день у браузері і код не підійде. Зміна одного — обов'язково зміна іншого.
+- **`section_classes` у `build/build_site.py` (рядки 75-89) — whitelist H3-заголовків**, які отримують semantic-CSS-класи. Якщо додаєш нову `### Назву секції` у контент — додай запис сюди, інакше H3 рендериться без стилю.
+- **`passwords.example.json` має ключ `"completion": "VERSHYNA"`**, який зараз нікуди не підключений (немає сторінки з `pw_key="completion"` у `PAGES`). Це мертвий конфіг — не покладайся на нього, поки не доданий відповідний запис у `PAGES`.
 
 ## Gamification: квест-механіка
 
@@ -93,13 +105,14 @@ cd dist && python3 -m http.server 8000
 # → http://localhost:8000
 ```
 
-**Білд PDF (опціонально, для друку методички):**
+**Залежності (одноразово):**
 ```bash
-python3 build/build_pdf.py
-# → потрібен Playwright + Chromium встановлений
+pip install markdown cryptography
 ```
 
 **Deploy.** Push у main → GitHub Actions автоматично деплоїть `dist/` на GitHub Pages. Workflow у `.github/workflows/pages.yml`.
+
+**Тести / лінт.** Відсутні. Сайт перевіряється вручну: збираємо, відкриваємо preview, проходимо квест-ланцюг кодами.
 
 ## Зміна паролів
 
@@ -121,6 +134,8 @@ python3 build/build_pdf.py
 - Repo Settings → Secrets and variables → Actions → New repository secret
 - Name: `PASSWORDS_JSON`, Value: вміст твого `passwords.json` (JSON-рядок)
 - Workflow прочитає його замість файлу в репо
+
+CI шукає паролі за ланцюгом fallback (`.github/workflows/pages.yml`): GitHub Secret `PASSWORDS_JSON` → закомічений у репо `passwords.json` → `passwords.example.json` як last-resort. У продакшні має бути перший варіант, інші — лише страховка.
 
 Після зміни паролів — перезбираємо `build_site.py` і пушимо. Workflow перебудує сайт автоматично.
 
