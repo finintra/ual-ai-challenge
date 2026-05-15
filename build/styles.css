@@ -2326,7 +2326,19 @@ html { scroll-behavior: smooth; }
   }
 
   /* --- App grid: single column (sidebar absorbed into drawer) --- */
-  .app { grid-template-columns: 1fr; }
+  .app { grid-template-columns: minmax(0, 1fr); }
+
+  /* CSS Grid items default to min-width: auto, which lets wide children
+     (long <pre>, tables, URLs) push the column past the viewport and
+     drag paragraphs along. Pin the main column min-width and clip the
+     body so a stray wide block can't shove the whole page sideways. */
+  html, body { overflow-x: clip; max-width: 100%; }
+  .main { min-width: 0; }
+  .content,
+  .content p,
+  .content li,
+  .content blockquote { overflow-wrap: anywhere; word-break: break-word; }
+  .content pre { max-width: 100%; }
 
   /* --- Sidebar becomes off-canvas drawer --- */
   .sidebar {
