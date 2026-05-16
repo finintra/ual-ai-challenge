@@ -2798,15 +2798,34 @@ html { scroll-behavior: smooth; }
   margin-top: 48px;
   padding-top: 24px;
   border-top: 1px solid rgba(34, 34, 34, 0.12);
-  gap: 24px;
+  gap: 32px;
+  flex-wrap: wrap;
 }
 
 .certificate__footer-block {
   display: flex;
   flex-direction: column;
 }
-.certificate__footer-block--signature {
-  text-align: right;
+
+/* Дата зліва */
+.certificate__footer-block--date {
+  flex: 0 0 auto;
+}
+
+/* Дві підписи справа, у ряд */
+.certificate__signatures {
+  display: flex;
+  gap: 36px;
+  align-items: flex-end;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.certificate__signature {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  min-width: 180px;
 }
 
 .certificate__date-label,
@@ -2829,10 +2848,9 @@ html { scroll-behavior: smooth; }
 }
 
 .certificate__signature-line {
-  width: 200px;
+  width: 100%;
   height: 1px;
   background: var(--ual-dark);
-  margin-left: auto;
   margin-bottom: 6px;
   opacity: 0.5;
 }
@@ -2862,6 +2880,8 @@ html { scroll-behavior: smooth; }
 
 /* =========================================================
    PRINT — Save as PDF
+   Calibrated to fit EXACTLY one A4 portrait page.
+   Whitespace and font sizes shrunk relative to web preview.
    ========================================================= */
 @media print {
   @page {
@@ -2874,14 +2894,59 @@ html { scroll-behavior: smooth; }
     margin: 0 !important;
   }
   .cert-toolbar, .cert-state { display: none !important; }
+
+  /* Certificate fills exactly one A4 page */
   .certificate {
     max-width: 100% !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
     margin: 0 !important;
     box-shadow: none !important;
     border-radius: 0 !important;
-    min-height: 297mm;
-    padding: 24mm 22mm 16mm !important;
+    padding: 14mm 18mm 12mm !important;
+    overflow: hidden !important;
+    page-break-after: avoid;
+    page-break-inside: avoid;
+    /* Thinner borders in print so they don't eat vertical space */
+    border-top-width: 8mm !important;
+    border-bottom-width: 4mm !important;
   }
+
+  /* Tighten everything vertically */
+  .certificate__header { margin-bottom: 14px !important; }
+  .certificate__wordmark { width: 220px !important; }
+  .certificate__eyebrow { margin-bottom: 10px !important; }
+  .certificate__name { font-size: 42px !important; margin: 0 0 14px !important; }
+  .certificate__shield { width: 44px !important; height: 56px !important; margin: 0 auto 14px !important; }
+  .certificate__lead {
+    font-size: 13.5px !important;
+    line-height: 1.55 !important;
+    margin: 0 0 14px !important;
+  }
+  .certificate__skills {
+    margin: 0 0 16px !important;
+  }
+  .certificate__skills li {
+    font-size: 12.5px !important;
+    line-height: 1.5 !important;
+    margin-bottom: 2px !important;
+    padding-left: 20px !important;
+  }
+  .certificate__portfolio-label { margin: 0 0 4px !important; }
+  .certificate__portfolio-url { font-size: 14px !important; }
+  .certificate__footer {
+    margin-top: 18px !important;
+    padding-top: 14px !important;
+    gap: 24px !important;
+  }
+  .certificate__date { font-size: 16px !important; }
+  .certificate__signature-name { font-size: 15px !important; }
+  .certificate__signature { min-width: 150px !important; }
+  .certificate__signature-line { margin-bottom: 4px !important; }
+  .certificate__issuer { font-size: 8.5px !important; bottom: 8px !important; }
+
   /* Make sure UAL colors print correctly */
   .certificate, .certificate * {
     -webkit-print-color-adjust: exact !important;
