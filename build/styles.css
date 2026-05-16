@@ -2881,33 +2881,43 @@ html { scroll-behavior: smooth; }
 /* =========================================================
    PRINT — Save as PDF
    Calibrated to fit EXACTLY one A4 portrait page.
-   Whitespace and font sizes shrunk relative to web preview.
+   Nuclear approach: hide everything except .certificate,
+   force html/body to exact A4 dims, prevent any phantom page.
    ========================================================= */
 @media print {
   @page {
     size: A4 portrait;
     margin: 0;
   }
-  html, body, .cert-body {
-    background: #fff !important;
-    padding: 0 !important;
+  html {
+    width: 210mm !important;
+    height: 297mm !important;
     margin: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    /* Critical: prevent any phantom 2nd page from any tiny overflow */
+    padding: 0 !important;
     overflow: hidden !important;
+    background: #fff !important;
   }
-  .cert-toolbar, .cert-state { display: none !important; }
-  /* Defensive — kill any block-flow contributions from inline-data scripts */
-  script[type="application/svg+xml"], script { display: none !important; }
+  body, .cert-body {
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 0 !important;
+    max-height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #fff !important;
+  }
+  /* Nuclear: hide every child of body except the certificate itself.
+     This kills script/toolbar/state/anything that might cause overflow. */
+  body > *:not(.certificate) { display: none !important; }
+  /* Belt + suspenders */
+  .cert-toolbar, .cert-state, script { display: none !important; }
 
-  /* Certificate fills exactly one A4 page.
-     Slightly under 297mm (290mm) to leave Safari/Chrome breathing room
-     so a stray sub-pixel doesn't trigger a phantom blank page. */
+  /* Certificate fills exactly one A4 page. */
   .certificate {
-    max-width: 100% !important;
-    width: 100% !important;
-    height: 290mm !important;
+    max-width: 210mm !important;
+    width: 210mm !important;
+    height: 297mm !important;
     min-height: 0 !important;
     max-height: 297mm !important;
     margin: 0 !important;
@@ -2915,11 +2925,12 @@ html { scroll-behavior: smooth; }
     border-radius: 0 !important;
     padding: 12mm 18mm 10mm !important;
     overflow: hidden !important;
-    page-break-after: avoid;
-    page-break-inside: avoid;
-    break-after: avoid;
-    break-inside: avoid;
-    /* Thinner borders in print so they don't eat vertical space */
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    page-break-before: avoid !important;
+    break-after: avoid !important;
+    break-inside: avoid !important;
+    break-before: avoid !important;
     border-top-width: 6mm !important;
     border-bottom-width: 3mm !important;
     box-sizing: border-box !important;
