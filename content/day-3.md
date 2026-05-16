@@ -473,6 +473,7 @@ After scaffolding, show the file structure and ask which section to build first.
 - **[Claude Code для веб-розробки](https://liti.biz.ua/web/)** — повний інтерактивний курс від LITI by FRACTAL: HTML, CSS, JavaScript, React, деплой — все з Claude Code. Якщо хочеш по-серйозному зрозуміти, що відбувається під капотом Lovable, і навчитись свій сайт розвивати далі без vendor lock-in, це наступний крок. Українською
 - **[Full Claude Code Tutorial for Non-Technical Beginners in 2026 (step-by-step)](https://youtu.be/bqJzIWAEn40)** — Futurepedia. Покроковий туторіал з Claude Code, спеціально для нетехнічних користувачів. Прямо у тему сьогоднішнього особистого треку, де ти використовуєш Claude Code для свого сайту. Свіже відео (2026), англійською, але темп пояснення розрахований саме на новачків
 - **[Сайт в Lovable з ChatGPT, Figma та деплоєм на Vercel — безкоштовно](https://youtu.be/K-Mo_iaeTyE)** — Maryna Ivanova Web & AI Лабораторія, українською. Точно стек УАЛ-треку: Lovable + Figma + Vercel. Покроково від нуля до live URL. Якщо щось у Lovable не виходить — це найшвидший UA-фікс
+- **[Master Lovable in 17 minutes (Starter Tutorial)](https://youtu.be/Vf2K0pcTLEo)** — офіційний стартовий туторіал від самої команди Lovable. Англійською, але це канонічна точка входу: компактно і без води показує саме «правильний» спосіб працювати з інструментом за версією творців
 
 ### Якщо вам і цього замало
 
