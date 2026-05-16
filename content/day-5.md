@@ -330,6 +330,10 @@ Title: [Бренд] background score
 - **[AI video like in the movies: Cinematic Studio tutorial in 20 minutes](https://youtu.be/EShEu1B7dx0)** — SVDM AI, 21 хв. Сфокусована техніка кінематографічного стилю — інший кут до 3-год курсу вище. Корисно, якщо твій ролик виходить «AI-генеричний» і ти хочеш конкретні промпт-патерни для «look as the movies». Англійською
 - **[ElevenLabs v3: клонування голосу стало реальним](https://youtu.be/R-K7ykc6nBM)** — ШТУЧКА ІНТЕЛЕКТ, українською. Глибший погляд на voice cloning в ElevenLabs v3 — корисно, якщо твій voiceover виходить «робоїдним» і потрібно зайти у тонше налаштування інтонації, експресії, клонування власного голосу для брендових роликів
 
+### Якщо вам і цього замало
+
+- **[@shtuchka-intelekt](https://youtube.com/@shtuchka-intelekt)** — головний український канал по AI-медіа: відео-генерація (Kling, Seedance, Veo, Higgsfield), voice cloning, image-генератори, монтаж. Нові огляди щотижня — найкраще місце слідкувати за полем загалом
+
 ---
 
 {{CHECKIN_FORM}}
