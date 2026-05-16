@@ -327,6 +327,7 @@ Title: [Бренд] background score
 ### Хочу ще
 
 - **[3-годинний український курс «Як зробити AI-відео з нуля»](https://youtu.be/aimzEZTFMkM)** — повний практичний курс від каналу «ШТУЧКА ІНТЕЛЕКТ». Покриває весь pipeline сьогоднішнього дня: пресети у Midjourney та Imagen, консистентні персонажі у Runway, анімація через Kling / Seedance / Higgsfield / Veo 3, музика у Suno, voiceover у ElevenLabs, монтаж і color grading у CapCut. Детальні таймкоди — можна піти прицільно у блок, який тобі сьогодні дався найважче
+- **[AI video like in the movies: Cinematic Studio tutorial in 20 minutes](https://youtu.be/EShEu1B7dx0)** — SVDM AI, 21 хв. Сфокусована техніка кінематографічного стилю — інший кут до 3-год курсу вище. Корисно, якщо твій ролик виходить «AI-генеричний» і ти хочеш конкретні промпт-патерни для «look as the movies». Англійською
 
 ---
 

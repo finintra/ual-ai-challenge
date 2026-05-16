@@ -471,6 +471,7 @@ After scaffolding, show the file structure and ask which section to build first.
 ### Хочу ще
 
 - **[Claude Code для веб-розробки](https://liti.biz.ua/web/)** — повний інтерактивний курс від LITI by FRACTAL: HTML, CSS, JavaScript, React, деплой — все з Claude Code. Якщо хочеш по-серйозному зрозуміти, що відбувається під капотом Lovable, і навчитись свій сайт розвивати далі без vendor lock-in, це наступний крок. Українською
+- **[I can't believe we coded an app with AI in 67 mins (V0, Cursor AI, Replit, Claude AI)](https://youtu.be/kDcM_xwmP3Q)** — Greg Isenberg, 1 год 7 хв. Hands-on демо реального AI-coding pipeline з нуля до робочого застосунку. Тули частково перекриваються з нашими (Claude AI = Claude Code, V0 ≈ Lovable), частково додають перспективу (Cursor, Replit). Корисно як референс «як виглядає швидка AI-розробка в реальному часі». Англійською
 
 ---
 
