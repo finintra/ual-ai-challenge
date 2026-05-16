@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<title>Сертифікат · УАЛ × AI Challenge 2026</title>
+<meta name="description" content="Сертифікат про завершення 7-денної AI-практики УАЛ-Ужгород × AI Challenge 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=PT+Sans:wght@400;700&family=Fraunces:opsz,wght@9..144,400..900&display=swap">
+<style>__STYLES__</style>
+</head>
+<body class="cert-body">
+
+<!-- Top bar (hidden in print) -->
+<div class="cert-toolbar" id="certToolbar">
+  <div class="cert-toolbar__inner">
+    <a class="cert-toolbar__back" href="index.html" id="backBtn">← Назад</a>
+    <button class="cert-toolbar__download" id="downloadBtn" type="button">⬇ Завантажити як PDF</button>
+  </div>
+  <div class="cert-toolbar__hint">Натисни кнопку → у вікні друку обери «Зберегти як PDF» → формат A4</div>
+</div>
+
+<!-- Loading / error state -->
+<div class="cert-state" id="certState">
+  <p>Завантажую сертифікат…</p>
+</div>
+
+<!-- The certificate itself -->
+<article class="certificate" id="certificate" hidden>
+
+  <header class="certificate__header">
+    <div class="certificate__logos">
+      <div class="certificate__wordmark" id="ualWordmark"></div>
+    </div>
+  </header>
+
+  <div class="certificate__eyebrow">Цей документ посвідчує</div>
+
+  <h1 class="certificate__name" id="certStudentName">[ім'я]</h1>
+
+  <div class="certificate__shield" id="ualShield"></div>
+
+  <section class="certificate__body">
+    <p class="certificate__lead">
+      пройшов(ла) інтенсивну <strong>7-денну практику</strong> AI Challenge
+      від <strong>Української Академії Лідерства</strong>, осередок в Ужгороді,
+      і освоїв(ла) повний цикл побудови бренду з AI — від стратегічного ресерчу
+      до фінальної публічної презентації.
+    </p>
+
+    <ul class="certificate__skills">
+      <li>Стратегічний AI-промптинг і user research</li>
+      <li>Бренд-айдентика з AI image generation</li>
+      <li>Веб-розробка з AI website builders</li>
+      <li>Контент-стратегія і AI-копірайтинг для соцмереж</li>
+      <li>AI-медіа продакшен: voice, music, video</li>
+      <li>Workflow-автоматизація і AI-агенти</li>
+      <li>Публічна презентація і портфоліо-сайт як актив</li>
+    </ul>
+
+    <p class="certificate__portfolio-label">Особисте портфоліо:</p>
+    <a class="certificate__portfolio-url" id="portfolioUrl" href="#" target="_blank" rel="noopener">[посилання]</a>
+  </section>
+
+  <footer class="certificate__footer">
+    <div class="certificate__footer-block">
+      <div class="certificate__date-label">Дата завершення</div>
+      <div class="certificate__date" id="certDate">[дата]</div>
+    </div>
+    <div class="certificate__footer-block certificate__footer-block--signature">
+      <div class="certificate__signature-line"></div>
+      <div class="certificate__signature-name">Анна Бондаренко</div>
+      <div class="certificate__signature-title">Голова осередку УАЛ-Ужгород</div>
+    </div>
+  </footer>
+
+  <div class="certificate__issuer">
+    УАЛ-Ужгород × AI Challenge 2026 · ual.ua
+  </div>
+</article>
+
+<!-- Embedded UAL logos as inline SVG (set at build time) -->
+<script type="application/svg+xml" id="ualWordmarkSvg">__UAL_WORDMARK_SVG__</script>
+<script type="application/svg+xml" id="ualShieldSvg">__UAL_SHIELD_SVG__</script>
+
+<script>__CERTIFICATE_JS__</script>
+
+</body>
+</html>

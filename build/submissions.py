@@ -115,14 +115,14 @@ SUBMISSIONS = {
     },
 
     "day-7": {
-        "title": "Чек-ін: пітч і фінальне портфоліо",
-        "intro": "Здай фінальні артефакти — після цього отримаєш код «вершина». УАЛ pitch deck і Loom — спільні з парою (однакові посилання у обох). Особистий deck, особистий Loom і рефлексія — у кожного свої.",
+        "title": "Чек-ін: портфоліо і публічна презентація",
+        "intro": "Здай фінальні артефакти — після цього отримаєш код «вершина» і твій персональний сертифікат у PDF. УАЛ pitch deck — спільний з парою (однакове посилання у обох). Особистий портфоліо-сайт, особистий deck, рефлексія — у кожного свої.",
         "fields": [
-            {"key": "ual_deck_url", "label": "Pitch deck УАЛ (Gamma / PDF)", "type": "url", "required": True},
-            {"key": "personal_deck_url", "label": "Pitch deck особистий (Gamma / PDF)", "type": "url", "required": True},
-            {"key": "ual_loom_url", "label": "Loom-запис 5 хв — УАЛ", "type": "url", "required": True},
-            {"key": "personal_loom_url", "label": "Loom-запис 5 хв — особисте", "type": "url", "required": True},
-            {"key": "portfolio_master_url", "label": "Portfolio Master Document (Notion / Google Doc)", "type": "url", "required": True, "help": "Зібрані посилання на всі результати усіх 7 днів"},
+            {"key": "personal_portfolio_url", "label": "Особистий портфоліо-сайт (live URL — головний deliverable дня)", "type": "url", "required": True, "help": "Multi-page сайт через Claude Code, який покажеш роботодавцю. Має бути у твоєму імені сертифіката"},
+            {"key": "ual_deck_url", "label": "Спільний УАЛ pitch deck (Gamma / NotebookLM / PDF)", "type": "url", "required": True, "help": "Один на пару — однакове посилання у обох"},
+            {"key": "personal_deck_url", "label": "Особистий pitch deck (Gamma / NotebookLM / PDF)", "type": "url", "required": True},
+            {"key": "ual_presentation_recording_url", "label": "Запис живої УАЛ-презентації (опціонально)", "type": "url", "required": False, "help": "Якщо хтось записав з кутка кімнати — YouTube unlisted / Drive"},
+            {"key": "personal_presentation_recording_url", "label": "Запис особистої живої презентації (опціонально)", "type": "url", "required": False},
             {"key": "final_reflection", "label": "Фінальна рефлексія (1-2 сторінки тексту)", "type": "textarea", "required": True, "rows": 16, "min_length": 600, "help": "Що 3 інструменти залишаються назавжди? Що змінилось у розумінні професії?"},
         ],
     },

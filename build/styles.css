@@ -1280,6 +1280,48 @@ html, body {
   letter-spacing: 0.08em;
 }
 
+.completion-code__certificate {
+  margin-top: 18px;
+  padding-top: 4px;
+}
+.completion-code__divider {
+  border: none;
+  border-top: 1px dashed var(--gold);
+  margin: 18px 0 18px;
+  opacity: 0.5;
+}
+.completion-code__cert-title {
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 36, "wght" 600;
+  font-size: 22px;
+  color: var(--gold);
+  margin: 0 0 8px;
+}
+.completion-code__cert-text {
+  color: var(--text);
+  font-size: 14.5px;
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+.completion-code__cert-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 22px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  background: var(--gold);
+  color: var(--ink-base);
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.15s, transform 0.1s;
+}
+.completion-code__cert-link:hover { background: #FFD960; }
+.completion-code__cert-link:active { transform: translateY(1px); }
+
 /* =========================================================
    STUDENTS ADMIN (rendered in supervisor.md page)
    ========================================================= */
@@ -2493,4 +2535,376 @@ html { scroll-behavior: smooth; }
   .checkin { padding: 18px 14px; }
   .mobile-topbar { padding-left: 12px; padding-right: 110px; }
   .mobile-topbar__brand { font-size: 10px; letter-spacing: 0.16em; }
+}
+
+/* =========================================================
+   CERTIFICATE PAGE (certificate.html — UAL-branded)
+   ========================================================= */
+:root {
+  --ual-yellow: #FFCD34;
+  --ual-yellow-bright: #EDEF00;
+  --ual-blue: #225BA4;
+  --ual-blue-bright: #3685EE;
+  --ual-dark: #222222;
+  --ual-paper: #FFFCF2;
+}
+
+.cert-body {
+  background: linear-gradient(135deg, #f8f5e8 0%, #fef8d8 100%);
+  font-family: "PT Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  color: var(--ual-dark);
+  margin: 0;
+  min-height: 100vh;
+  padding: 48px 24px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Toolbar (hidden on print) */
+.cert-toolbar {
+  max-width: 800px;
+  margin: 0 auto 24px;
+}
+.cert-toolbar__inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.cert-toolbar__back {
+  color: var(--ual-dark);
+  font-family: "Montserrat", sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.cert-toolbar__back:hover { opacity: 1; }
+.cert-toolbar__download {
+  font-family: "Montserrat", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--ual-blue);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.cert-toolbar__download:hover { background: #1a4a87; }
+.cert-toolbar__download:active { transform: translateY(1px); }
+.cert-toolbar__hint {
+  margin-top: 12px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 12px;
+  color: var(--ual-dark);
+  opacity: 0.55;
+  text-align: center;
+}
+
+.cert-state {
+  max-width: 800px;
+  margin: 80px auto;
+  text-align: center;
+  font-family: "Montserrat", sans-serif;
+  color: var(--ual-dark);
+}
+.cert-error {
+  background: rgba(255, 205, 52, 0.18);
+  border-left: 4px solid var(--ual-yellow);
+  padding: 16px 22px;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+.cert-error code {
+  background: rgba(34, 34, 34, 0.08);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* =========================================================
+   THE CERTIFICATE
+   A4 portrait: 210mm × 297mm
+   ========================================================= */
+.certificate {
+  max-width: 800px;
+  margin: 0 auto;
+  background: var(--ual-paper);
+  position: relative;
+  padding: 64px 56px 48px;
+  box-shadow: 0 24px 64px rgba(34, 34, 34, 0.18);
+  border-radius: 4px;
+  /* Yellow border accent */
+  border-top: 16px solid var(--ual-yellow);
+  border-bottom: 8px solid var(--ual-blue);
+  overflow: hidden;
+}
+
+/* Decorative corner accent */
+.certificate::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle at top right, rgba(255, 205, 52, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.certificate__header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.certificate__wordmark {
+  width: 280px;
+  height: auto;
+}
+.certificate__wordmark svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+/* Force wordmark fill colors — original UAL site uses currentColor or #222 */
+.certificate__wordmark svg path {
+  fill: var(--ual-dark);
+}
+
+.certificate__eyebrow {
+  text-align: center;
+  font-family: "Montserrat", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ual-blue);
+  margin-bottom: 18px;
+}
+
+.certificate__name {
+  font-family: "Fraunces", "Times New Roman", serif;
+  font-variation-settings: "opsz" 144, "wght" 700;
+  font-size: 56px;
+  line-height: 1.05;
+  text-align: center;
+  color: var(--ual-dark);
+  margin: 0 0 28px;
+  letter-spacing: -0.02em;
+}
+
+.certificate__shield {
+  display: flex;
+  justify-content: center;
+  margin: 0 auto 28px;
+  width: 56px;
+  height: 70px;
+}
+.certificate__shield svg {
+  width: 100%;
+  height: 100%;
+}
+/* Shield: shape gets primary yellow */
+.certificate__shield svg path {
+  fill: var(--ual-yellow);
+}
+
+.certificate__body {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.certificate__lead {
+  font-family: "PT Sans", sans-serif;
+  font-size: 16.5px;
+  line-height: 1.7;
+  color: var(--ual-dark);
+  margin: 0 0 22px;
+}
+.certificate__lead strong {
+  font-weight: 700;
+  color: var(--ual-blue);
+}
+
+.certificate__skills {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  text-align: left;
+  display: inline-block;
+}
+.certificate__skills li {
+  font-family: "PT Sans", sans-serif;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--ual-dark);
+  padding-left: 24px;
+  position: relative;
+  margin-bottom: 4px;
+}
+.certificate__skills li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--ual-blue);
+  font-weight: 700;
+}
+
+.certificate__portfolio-label {
+  font-family: "Montserrat", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ual-dark);
+  opacity: 0.65;
+  margin: 0 0 6px;
+}
+.certificate__portfolio-url {
+  display: inline-block;
+  font-family: "Montserrat", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ual-blue);
+  text-decoration: underline;
+  text-decoration-color: var(--ual-yellow);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 4px;
+  word-break: break-all;
+}
+.certificate__portfolio-url--missing {
+  color: var(--ual-dark);
+  opacity: 0.4;
+  text-decoration: none;
+  font-style: italic;
+}
+
+.certificate__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(34, 34, 34, 0.12);
+  gap: 24px;
+}
+
+.certificate__footer-block {
+  display: flex;
+  flex-direction: column;
+}
+.certificate__footer-block--signature {
+  text-align: right;
+}
+
+.certificate__date-label,
+.certificate__signature-title {
+  font-family: "Montserrat", sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ual-dark);
+  opacity: 0.55;
+}
+
+.certificate__date {
+  font-family: "Fraunces", serif;
+  font-variation-settings: "opsz" 36, "wght" 600;
+  font-size: 20px;
+  color: var(--ual-dark);
+  margin-top: 6px;
+}
+
+.certificate__signature-line {
+  width: 200px;
+  height: 1px;
+  background: var(--ual-dark);
+  margin-left: auto;
+  margin-bottom: 6px;
+  opacity: 0.5;
+}
+.certificate__signature-name {
+  font-family: "Fraunces", serif;
+  font-variation-settings: "opsz" 24, "wght" 500;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ual-dark);
+  margin-bottom: 4px;
+}
+
+.certificate__issuer {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: "Montserrat", sans-serif;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ual-dark);
+  opacity: 0.45;
+}
+
+/* =========================================================
+   PRINT — Save as PDF
+   ========================================================= */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  body, .cert-body {
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .cert-toolbar, .cert-state { display: none !important; }
+  .certificate {
+    max-width: 100% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    min-height: 297mm;
+    padding: 24mm 22mm 16mm !important;
+  }
+  /* Make sure UAL colors print correctly */
+  .certificate, .certificate * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* =========================================================
+   CERTIFICATE PAGE — MOBILE
+   ========================================================= */
+@media (max-width: 720px) {
+  .cert-body { padding: 24px 14px; }
+  .certificate {
+    padding: 40px 24px 32px;
+    border-top-width: 12px;
+    border-bottom-width: 6px;
+  }
+  .certificate__name { font-size: 38px; }
+  .certificate__wordmark { width: 200px; }
+  .certificate__lead { font-size: 15px; }
+  .certificate__skills li { font-size: 13.5px; }
+  .certificate__footer { flex-direction: column; align-items: flex-start; gap: 18px; }
+  .certificate__footer-block--signature { text-align: left; }
+  .certificate__signature-line { margin-left: 0; }
+  .certificate__portfolio-url { font-size: 14px; }
 }

@@ -700,7 +700,29 @@
 
   function revealCompletion(dayId) {
     const block = contentEl.querySelector(`.completion-code[data-day="${dayId}"]`);
-    if (block) block.hidden = false;
+    if (block) {
+      block.hidden = false;
+      // For day-7 — also append a button to open the personal certificate
+      // (UAL-branded PDF), once we know the student's slug. Idempotent:
+      // checks for existing button before appending.
+      if (dayId === 'day-7' && studentSlug && !block.querySelector('.completion-code__certificate')) {
+        const wrap = document.createElement('div');
+        wrap.className = 'completion-code__certificate';
+        wrap.innerHTML = `
+          <hr class="completion-code__divider">
+          <h3 class="completion-code__cert-title">🏆 Твій сертифікат готовий</h3>
+          <p class="completion-code__cert-text">
+            УАЛ-брендований PDF-сертифікат із твоїм іменем, датою завершення
+            і посиланням на твоє портфоліо. Покажеш роботодавцю, додаси у LinkedIn,
+            повісиш на стіну — твій вибір.
+          </p>
+          <a class="completion-code__cert-link" href="certificate.html?student=${encodeURIComponent(studentSlug)}" target="_blank" rel="noopener">
+            Відкрити сертифікат →
+          </a>
+        `;
+        block.appendChild(wrap);
+      }
+    }
   }
 
   async function hydrateCheckinForm(form, dayId, autoReveal) {
