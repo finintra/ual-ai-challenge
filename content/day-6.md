@@ -454,6 +454,7 @@ MCP (Model Context Protocol) дає Claude "руки" в Notion, Drive, GitHub. 
 - **[Building with Claude API](https://liti.biz.ua/api/)** — глибокий курс по Claude API: SDK, streaming, tool use, structured output. Сьогодні ти використовував API через n8n HTTP-node — цей курс пояснить, що ще ти можеш з ним зробити (function calling, batching, кешування). Українською, від LITI by FRACTAL
 - **[Claude Code Mastery](https://liti.biz.ua/code/)** — advanced-курс по Claude Code: автоматизація, скрипти, CLI, розширені можливості. Розширює факультативний блок «Claude Code як агент» з сьогоднішнього дня — для тих, хто хоче перетворити Claude у повноцінного локального помічника
 - **[Model Context Protocol](https://liti.biz.ua/mcp/)** — створення власних MCP-серверів, інтеграція з твоїми сервісами. Якщо короткий MCP-блок у факультативі сьогодні зацікавив — це наступний рівень: підключити Claude до своїх внутрішніх інструментів
+- **[6 безкоштовних офіційних курсів від Anthropic](https://anthropic.skilljar.com/claude-with-the-anthropic-api)** — навчальний хаб виробника Claude: 300+ лекцій, практичні завдання, сертифікати. Включає окремі курси «Робота з Claude API», «Вступ до MCP», «MCP для просунутих», «Claude Code у дії». Системно перекриває весь стек сьогоднішнього дня — як офіційне доповнення до україномовних курсів LITI вище
 
 ---
 
