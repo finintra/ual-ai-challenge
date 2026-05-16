@@ -449,6 +449,12 @@ MCP (Model Context Protocol) дає Claude "руки" в Notion, Drive, GitHub. 
 4. Скільки відповідей прийшло у перші 4 години? Як виглядає твій reply-rate vs benchmarks (10-20% AI-personalized)? Що це говорить про якість листів?
 5. Де хочеш повторити цю ж механіку у своєму житті у найближчий місяць — поза УАЛ і поза цим проектом? Конкретний use-case
 
+### Хочу ще
+
+- **[Building with Claude API](https://liti.biz.ua/api/)** — глибокий курс по Claude API: SDK, streaming, tool use, structured output. Сьогодні ти використовував API через n8n HTTP-node — цей курс пояснить, що ще ти можеш з ним зробити (function calling, batching, кешування). Українською, від LITI by FRACTAL
+- **[Claude Code Mastery](https://liti.biz.ua/code/)** — advanced-курс по Claude Code: автоматизація, скрипти, CLI, розширені можливості. Розширює факультативний блок «Claude Code як агент» з сьогоднішнього дня — для тих, хто хоче перетворити Claude у повноцінного локального помічника
+- **[Model Context Protocol](https://liti.biz.ua/mcp/)** — створення власних MCP-серверів, інтеграція з твоїми сервісами. Якщо короткий MCP-блок у факультативі сьогодні зацікавив — це наступний рівень: підключити Claude до своїх внутрішніх інструментів
+
 ---
 
 {{CHECKIN_FORM}}
