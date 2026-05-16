@@ -2888,30 +2888,41 @@ html { scroll-behavior: smooth; }
     size: A4 portrait;
     margin: 0;
   }
-  body, .cert-body {
+  html, body, .cert-body {
     background: #fff !important;
     padding: 0 !important;
     margin: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    /* Critical: prevent any phantom 2nd page from any tiny overflow */
+    overflow: hidden !important;
   }
   .cert-toolbar, .cert-state { display: none !important; }
+  /* Defensive — kill any block-flow contributions from inline-data scripts */
+  script[type="application/svg+xml"], script { display: none !important; }
 
-  /* Certificate fills exactly one A4 page */
+  /* Certificate fills exactly one A4 page.
+     Slightly under 297mm (290mm) to leave Safari/Chrome breathing room
+     so a stray sub-pixel doesn't trigger a phantom blank page. */
   .certificate {
     max-width: 100% !important;
-    width: 210mm !important;
-    height: 297mm !important;
-    min-height: 297mm !important;
+    width: 100% !important;
+    height: 290mm !important;
+    min-height: 0 !important;
     max-height: 297mm !important;
     margin: 0 !important;
     box-shadow: none !important;
     border-radius: 0 !important;
-    padding: 14mm 18mm 12mm !important;
+    padding: 12mm 18mm 10mm !important;
     overflow: hidden !important;
     page-break-after: avoid;
     page-break-inside: avoid;
+    break-after: avoid;
+    break-inside: avoid;
     /* Thinner borders in print so they don't eat vertical space */
-    border-top-width: 8mm !important;
-    border-bottom-width: 4mm !important;
+    border-top-width: 6mm !important;
+    border-bottom-width: 3mm !important;
+    box-sizing: border-box !important;
   }
 
   /* Tighten everything vertically */
