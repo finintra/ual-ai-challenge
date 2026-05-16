@@ -40,6 +40,7 @@ ROOT = Path(__file__).parent.parent
 CONTENT = ROOT / "content"
 BUILD = ROOT / "build"
 DIST = ROOT / "dist"
+RESOURCES = ROOT / "resources"  # static assets (PDFs, etc.) copied to dist/resources/
 PASSWORDS_FILE = ROOT / "passwords.json"
 
 # Allow importing submissions.py from the build dir
@@ -549,6 +550,24 @@ def main():
 
     # Portfolio page (separate output)
     build_portfolio_page(supabase_url, supabase_anon_key, STUDENTS)
+
+    # Static resources (PDFs, etc.) — copy resources/ → dist/resources/ as-is.
+    # Linked from content via /resources/<filename>.
+    copy_resources()
+
+
+def copy_resources():
+    """Mirror resources/ into dist/resources/ (overwrite-safe, recursive)."""
+    if not RESOURCES.exists():
+        return
+    import shutil
+    target = DIST / "resources"
+    if target.exists():
+        shutil.rmtree(target)
+    shutil.copytree(RESOURCES, target)
+    total = sum(p.stat().st_size for p in target.rglob("*") if p.is_file())
+    n = sum(1 for p in target.rglob("*") if p.is_file())
+    print(f"✓ Copied {n} resource file(s) ({total // 1024} KB) → {target}")
 
 
 if __name__ == "__main__":
