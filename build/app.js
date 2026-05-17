@@ -553,8 +553,8 @@
     // Галочки не показуємо керівнику — це індикатори студентського статусу.
     const checksHtml = isSupervisor ? '' : `
       <span class="day-row__checks">
-        <span class="day-row__check ${submitClass}" title="Робота здана" aria-label="Робота здана">✓</span>
-        <span class="day-row__check ${reviewClass}" title="Робота перевірена" aria-label="Робота перевірена">✓</span>
+        <span class="day-row__check ${submitClass}" data-tooltip="Робота здана" aria-label="Робота здана">✓</span>
+        <span class="day-row__check ${reviewClass}" data-tooltip="Робота перевірена" aria-label="Робота перевірена">✓</span>
       </span>
     `;
 

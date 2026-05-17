@@ -363,6 +363,7 @@ html, body {
   align-self: center;
 }
 .day-row__check {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -382,6 +383,50 @@ html, body {
   background: #2EA04A;
   border-color: #2EA04A;
   color: #fff;
+}
+/* Кастомний tooltip над галочкою (native title= ховається у деяких
+   браузерах коли елемент усередині button). */
+.day-row__check::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 9px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  background: var(--ink-base);
+  color: var(--text);
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.12s, visibility 0.12s;
+  z-index: 1000;
+}
+.day-row__check::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--rule-strong);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.12s, visibility 0.12s;
+  z-index: 1000;
+}
+.day-row__check:hover::after,
+.day-row__check:hover::before {
+  opacity: 1;
+  visibility: visible;
 }
 
 .day-row:hover { background: var(--ink-elev); }
@@ -2857,17 +2902,7 @@ html { scroll-behavior: smooth; }
   border-top: 14px solid var(--ual-yellow);
   border-bottom: 8px solid var(--ual-blue);
   overflow: hidden;
-  /* Flex centering — content always balanced */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   text-align: center;
-}
-
-/* Direct children стають flex items — щоб width: 100% спрацював для footer і body */
-.certificate > * {
-  width: 100%;
 }
 
 /* Decorative corner accent */
@@ -3146,7 +3181,7 @@ html { scroll-behavior: smooth; }
   .certificate__lead {
     font-size: 12.5px !important;
     line-height: 1.5 !important;
-    margin: 0 0 12px !important;
+    margin: 0 auto 12px !important;
     max-width: 600px !important;
   }
   .certificate__skills {
@@ -3154,6 +3189,16 @@ html { scroll-behavior: smooth; }
     gap: 0 28px !important;
     max-width: 640px !important;
   }
+  /* Footer: 3-column grid must span full width */
+  .certificate__footer {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    width: 100% !important;
+    margin-top: 14px !important;
+    padding-top: 10px !important;
+    gap: 24px !important;
+  }
+  .certificate__body { width: 100% !important; }
   .certificate__skills li {
     font-size: 11.5px !important;
     line-height: 1.45 !important;
