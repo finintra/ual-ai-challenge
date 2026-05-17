@@ -266,7 +266,7 @@ $100 credit без credit card + free tier багатьох сервісів (в
 - 7 щоденних блоків — артефакти, інсайт, промпт-знахідка, виявлені галюцинації AI, що зробив би інакше, енергія дня
 - Підсумок тижня — топ-інсайти, топ-промпти, нові вміння, питання без відповіді
 
-<pre><code>{{JOURNAL_PREVIEW}}</code></pre>
+<textarea class="journal-preview__src" readonly rows="20">{{JOURNAL_PREVIEW}}</textarea>
 
 </details>
 

@@ -3172,6 +3172,24 @@ html { scroll-behavior: smooth; }
   line-height: 1.55;
   margin: 12px 0 16px;
 }
+.journal-preview__src {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  max-height: 420px;
+  margin: 12px 0 16px;
+  padding: 14px 16px;
+  background: var(--ink-elev);
+  color: var(--text);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  resize: vertical;
+  white-space: pre;
+  overflow: auto;
+}
 
 /* =========================================================
    PRINT — Save as PDF
