@@ -61,7 +61,7 @@ PAGES = [
     ("day-6",      "day-6.md",      "День 6 · Автоматизація","day-6",      True,  "day-7"),
     ("day-7",      "day-7.md",      "День 7 · Пітч",         "day-7",      True,  "completion"),
     ("journal",    "journal.md",    "Бортовий журнал",       "main",       False, None),
-    ("supervisor", "supervisor.md", "Керівник",              "supervisor", True,  None),
+    ("supervisor", "supervisor.md", "Адміністрування",       "supervisor", True,  None),
 ]
 
 

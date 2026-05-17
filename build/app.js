@@ -378,7 +378,7 @@
     const badge = document.getElementById('studentBadge');
     if (isSupervisor) {
       badge.hidden = false;
-      badge.innerHTML = `<span class="student-badge__mono">РЕЖИМ</span><span class="student-badge__name">Керівник</span>`;
+      badge.innerHTML = `<span class="student-badge__mono">РЕЖИМ</span><span class="student-badge__name">Адміністрування</span>`;
       return;
     }
     if (!studentSlug) { badge.hidden = true; return; }
@@ -456,12 +456,13 @@
       else start.push(p);
     });
 
+    // Supervisor sees the admin section first — it's the primary work surface.
+    const showAdmin = internal.length && (isSupervisor || localStorage.getItem('is_supervisor') === '1');
+    if (showAdmin) {
+      navEl.appendChild(renderGroup('Адміністрування', internal.map(renderPlainItem)));
+    }
     if (start.length) navEl.appendChild(renderGroup('Старт', start.map(renderPlainItem)));
     if (days.length) navEl.appendChild(renderGroup('7 днів', days.map(renderDayRow)));
-    // Only show supervisor link if we're actually logged in as supervisor
-    if (internal.length && (isSupervisor || localStorage.getItem('is_supervisor') === '1')) {
-      navEl.appendChild(renderGroup('Внутрішнє', internal.map(renderPlainItem)));
-    }
   }
 
   function renderGroup(label, items) {
