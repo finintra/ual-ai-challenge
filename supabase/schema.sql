@@ -105,3 +105,15 @@ create policy "anon read"   on public.students for select using (true);
 create policy "anon insert" on public.students for insert with check (true);
 create policy "anon update" on public.students for update using (true) with check (true);
 create policy "anon delete" on public.students for delete using (true);
+
+-- =========================================================
+-- v3.1: per-student personal passwords
+-- unlock_blob stores the shared `main` password encrypted with the
+-- student's personal password (PBKDF2-SHA256 200k iters → AES-GCM).
+-- Login flow tries each student's blob with the typed password; a
+-- successful decrypt yields recovered `main` and sets the student slug
+-- automatically (no picker). Hash-only — plaintext password never lands
+-- in Supabase or in the admin UI after entry.
+-- =========================================================
+alter table public.students
+  add column if not exists unlock_blob jsonb;

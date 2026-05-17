@@ -41,6 +41,7 @@
         slug: r.slug,
         name: r.name,
         color: r.color || '#FF5A3D',
+        unlock_blob: r.unlock_blob || null,
       }));
     } catch (e) {
       return null;
@@ -120,7 +121,13 @@
     return bytes;
   }
 
-  async function deriveKey(password, saltBytes) {
+  function bytesToBase64(bytes) {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+
+  async function deriveKey(password, saltBytes, usages) {
     const enc = new TextEncoder();
     const keyMaterial = await crypto.subtle.importKey(
       'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
@@ -129,7 +136,7 @@
       { name: 'PBKDF2', salt: saltBytes, iterations: 200000, hash: 'SHA-256' },
       keyMaterial,
       { name: 'AES-GCM', length: 256 },
-      false, ['decrypt']
+      false, usages || ['decrypt']
     );
   }
 
@@ -139,12 +146,28 @@
       const salt = base64ToBytes(entry.salt);
       const iv = base64ToBytes(entry.iv);
       const ct = base64ToBytes(entry.ct);
-      const key = await deriveKey(password, salt);
+      const key = await deriveKey(password, salt, ['decrypt']);
       const ptBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ct);
       return new TextDecoder().decode(ptBuf);
     } catch (e) {
       return null;
     }
+  }
+
+  async function encryptBlob(plaintext, password) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveKey(password, salt, ['encrypt']);
+    const ct = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv: iv },
+      key,
+      new TextEncoder().encode(plaintext)
+    );
+    return {
+      salt: bytesToBase64(salt),
+      iv:   bytesToBase64(iv),
+      ct:   bytesToBase64(new Uint8Array(ct)),
+    };
   }
 
   async function tryDecrypt(pageId, password) {
@@ -160,6 +183,23 @@
   const loginForm = document.getElementById('loginForm');
   const passwordInput = document.getElementById('passwordInput');
   const loginError = document.getElementById('loginError');
+
+  // Try each student's unlock_blob with the typed password. A successful
+  // decrypt yields the recovered `main` password and the student's slug.
+  // Returns { slug, mainPwd } or null.
+  async function tryStudentLogin(password) {
+    if (!SUPABASE_READY) return null;
+    const live = await fetchStudents();
+    if (!live || !live.length) return null;
+    // Update in-memory roster while we're here
+    STUDENTS = live;
+    for (const s of live) {
+      if (!s.unlock_blob) continue;
+      const recovered = await tryDecryptBlob(s.unlock_blob, password);
+      if (recovered) return { slug: s.slug, mainPwd: recovered };
+    }
+    return null;
+  }
 
   async function attemptLogin(password) {
     // Main password should unlock pages with "locked_by_default: false"
@@ -206,6 +246,25 @@
         return 'supervisor';
       }
     }
+    // Personal student password: try each unlock_blob from Supabase.
+    // On success, the recovered main pwd unlocks base pages and we
+    // remember which student typed it (slug auto-picked, no picker).
+    const personal = await tryStudentLogin(password);
+    if (personal) {
+      studentSlug = personal.slug;
+      localStorage.setItem('student_slug', personal.slug);
+      const mainPwd = personal.mainPwd;
+      for (const id of baseUnlocks) {
+        const decrypted = await tryDecrypt(id, mainPwd);
+        if (decrypted) {
+          storedPasswords[id] = mainPwd;
+          decryptedCache[id] = decrypted;
+          if (!unlockedDays.includes(id)) unlockedDays.push(id);
+        }
+      }
+      persistState();
+      return 'student-personal';
+    }
     return null;
   }
 
@@ -232,6 +291,11 @@
       } else {
         enterApp();
       }
+    } else if (role === 'student-personal') {
+      isSupervisor = false;
+      localStorage.removeItem('is_supervisor');
+      // Slug was already set by tryStudentLogin — go straight in.
+      enterApp();
     } else {
       loginError.hidden = false;
       passwordInput.select();
@@ -842,8 +906,26 @@
   // ===========================================================
   // Supervisor: students admin (CRUD на public.students)
   // ===========================================================
+  // Return the live `main` password the supervisor has in this session,
+  // or null if not available. Pulled from storedPasswords for any page
+  // whose pw_key in PAGES is 'main' (overview/day-1/journal).
+  function getMainPasswordFromSession() {
+    const mainBackedPages = ['overview', 'day-1', 'journal'];
+    for (const id of mainBackedPages) {
+      if (storedPasswords[id]) return storedPasswords[id];
+    }
+    return null;
+  }
+
   function studentsAdminMarkup() {
-    const rows = STUDENTS.map(s => `
+    const rows = STUDENTS.map(s => {
+      const hasPwd = !!s.unlock_blob;
+      const pwdLabel = hasPwd ? '✓ встановлений' : '— не встановлений';
+      const pwdCls = hasPwd ? 'students-admin__pwd-on' : 'students-admin__pwd-off';
+      const clearBtn = hasPwd
+        ? '<button type="button" class="students-admin__btn students-admin__btn--danger" data-action="clear-pwd" title="Скинути пароль студента">×</button>'
+        : '';
+      return `
       <tr data-slug="${escapeHtml(s.slug)}">
         <td>
           <input class="students-admin__input" data-field="name"
@@ -856,20 +938,28 @@
           <input class="students-admin__input students-admin__color"
                  data-field="color" type="color" value="${escapeHtml(s.color)}" />
         </td>
+        <td>
+          <span class="${pwdCls}">${pwdLabel}</span>
+        </td>
         <td class="students-admin__actions">
           <button type="button" class="students-admin__btn" data-action="save">Зберегти</button>
+          <button type="button" class="students-admin__btn" data-action="set-pwd">Пароль</button>
+          ${clearBtn}
           <button type="button" class="students-admin__btn students-admin__btn--danger"
                   data-action="delete">Видалити</button>
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
     return `
       <div class="students-admin__head">
         <h3 class="students-admin__title">Студенти челенджу</h3>
         <p class="students-admin__intro">
-          Додавай, перейменовуй і видаляй учасників. Slug — внутрішній ідентифікатор
-          для URL портфоліо (<code>portfolio.html?student=&lt;slug&gt;</code>) та
-          submissions. Slug міняти не можна — створи нового студента і скопіюй роботи руками.
+          Додавай, перейменовуй, керуй паролями. Slug — внутрішній ідентифікатор
+          для URL портфоліо (<code>portfolio.html?student=&lt;slug&gt;</code>) і
+          submissions, міняти не можна. <b>Пароль</b> — особистий код студента
+          для логіну (зберігається лише як хеш + AES-blob, plaintext у Supabase
+          не записується).
         </p>
       </div>
       <table class="students-admin__table">
@@ -878,10 +968,11 @@
             <th>Ім'я</th>
             <th>Slug</th>
             <th>Колір</th>
+            <th>Пароль</th>
             <th></th>
           </tr>
         </thead>
-        <tbody>${rows || '<tr><td colspan="4" class="students-admin__empty">Поки нікого. Додай нижче.</td></tr>'}</tbody>
+        <tbody>${rows || '<tr><td colspan="5" class="students-admin__empty">Поки нікого. Додай нижче.</td></tr>'}</tbody>
       </table>
       <div class="students-admin__add">
         <h4 class="students-admin__subhead">Додати студента</h4>
@@ -890,6 +981,8 @@
                  placeholder="Ім'я (напр. Олексій)" />
           <input class="students-admin__input" data-add="slug" type="text"
                  placeholder="slug (latin, напр. oleksiy)" autocomplete="off" />
+          <input class="students-admin__input" data-add="pwd" type="text"
+                 placeholder="пароль (опціонально)" autocomplete="off" />
           <input class="students-admin__input students-admin__color" data-add="color"
                  type="color" value="#FF5A3D" />
           <button type="button" class="students-admin__btn students-admin__btn--primary"
@@ -912,8 +1005,18 @@
     });
   }
 
+  async function setStudentPassword(slug, personalPwd) {
+    const mainPwd = getMainPasswordFromSession();
+    if (!mainPwd) {
+      alert('Не знайдено main-пароль у поточній сесії. Перелогінься як supervisor і спробуй знову.');
+      return false;
+    }
+    const blob = await encryptBlob(mainPwd, personalPwd);
+    return updateStudent(slug, { unlock_blob: blob });
+  }
+
   function wireStudentsAdmin(slot) {
-    // Per-row save / delete
+    // Per-row save / delete / pwd
     slot.querySelectorAll('tr[data-slug]').forEach(tr => {
       const slug = tr.dataset.slug;
       tr.querySelector('[data-action="save"]').addEventListener('click', async () => {
@@ -924,6 +1027,27 @@
         btn.disabled = true; btn.textContent = '…';
         const ok = await updateStudent(slug, { name, color });
         btn.textContent = ok ? '✓' : 'помилка';
+        await refreshStudents();
+        renderStudentsAdmin(slot);
+      });
+      tr.querySelector('[data-action="set-pwd"]').addEventListener('click', async () => {
+        const pwd = prompt('Новий пароль для "' + slug + '" (мін. 4 символи). Студент логінитиметься цим кодом замість спільного.');
+        if (pwd === null) return;
+        if (pwd.length < 4) { alert('Мін. 4 символи'); return; }
+        const btn = tr.querySelector('[data-action="set-pwd"]');
+        btn.disabled = true; btn.textContent = '…';
+        const ok = await setStudentPassword(slug, pwd);
+        btn.textContent = ok ? '✓' : 'помилка';
+        if (ok) alert('Пароль для "' + slug + '" встановлено. Передай його студенту — він зможе залогінитись цим кодом без picker-а.');
+        await refreshStudents();
+        renderStudentsAdmin(slot);
+      });
+      const clearBtn = tr.querySelector('[data-action="clear-pwd"]');
+      if (clearBtn) clearBtn.addEventListener('click', async () => {
+        if (!confirm('Скинути особистий пароль "' + slug + '"? Студент зможе залогінитись лише спільним main-паролем + picker.')) return;
+        clearBtn.disabled = true;
+        const ok = await updateStudent(slug, { unlock_blob: null });
+        if (!ok) { alert('Не вдалось'); clearBtn.disabled = false; return; }
         await refreshStudents();
         renderStudentsAdmin(slot);
       });
@@ -942,6 +1066,7 @@
         const name = slot.querySelector('[data-add="name"]').value.trim();
         const slug = slot.querySelector('[data-add="slug"]').value.trim().toLowerCase();
         const color = slot.querySelector('[data-add="color"]').value;
+        const pwd = slot.querySelector('[data-add="pwd"]').value;
         const status = slot.querySelector('[data-role="add-status"]');
         const showStatus = (msg, ok) => {
           status.textContent = msg;
@@ -950,11 +1075,22 @@
         };
         if (!name || !slug) { showStatus('Заповни ім\'я і slug', false); return; }
         if (!/^[a-z0-9-]+$/.test(slug)) { showStatus('Slug — лише latin, цифри і "-"', false); return; }
+        if (pwd && pwd.length < 4) { showStatus('Пароль — мін. 4 символи (або лиши порожнім)', false); return; }
         addBtn.disabled = true;
-        const ok = await insertStudent({ slug, name, color });
+        let rec = { slug, name, color };
+        if (pwd) {
+          const mainPwd = getMainPasswordFromSession();
+          if (!mainPwd) {
+            addBtn.disabled = false;
+            showStatus('Немає main-пароля в сесії — перелогінься як supervisor', false);
+            return;
+          }
+          rec.unlock_blob = await encryptBlob(mainPwd, pwd);
+        }
+        const ok = await insertStudent(rec);
         addBtn.disabled = false;
         if (!ok) { showStatus('Не вдалось додати (можливо slug вже існує)', false); return; }
-        showStatus('Додано', true);
+        showStatus(pwd ? 'Додано. Передай студенту пароль для логіну.' : 'Додано', true);
         await refreshStudents();
         renderStudentsAdmin(slot);
       });
