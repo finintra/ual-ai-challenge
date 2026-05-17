@@ -455,14 +455,12 @@ def build_certificate_page(supabase_url, supabase_anon_key, students):
     cjs = (BUILD / "certificate_app.js").read_text(encoding="utf-8")
 
     wordmark_svg = (RESOURCES / "ual-wordmark.svg").read_text(encoding="utf-8")
-    shield_svg = (RESOURCES / "ual-shield.svg").read_text(encoding="utf-8")
 
     cjs = inject_supabase_config(cjs, supabase_url, supabase_anon_key, students)
 
     output = tpl.replace("__STYLES__", styles)
     output = output.replace("__CERTIFICATE_JS__", cjs)
     output = output.replace("__UAL_WORDMARK_SVG__", wordmark_svg)
-    output = output.replace("__UAL_SHIELD_SVG__", shield_svg)
 
     out = DIST / "certificate.html"
     out.write_text(output, encoding="utf-8")

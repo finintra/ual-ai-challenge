@@ -2962,22 +2962,6 @@ html { scroll-behavior: smooth; }
   letter-spacing: -0.02em;
 }
 
-.certificate__shield {
-  display: flex;
-  justify-content: center;
-  margin: 0 auto 18px;
-  width: 44px;
-  height: 56px;
-}
-.certificate__shield svg {
-  width: 100%;
-  height: 100%;
-}
-/* Shield: shape gets primary yellow */
-.certificate__shield svg path {
-  fill: var(--ual-yellow);
-}
-
 .certificate__body {
   text-align: center;
   max-width: 880px;
@@ -3021,6 +3005,13 @@ html { scroll-behavior: smooth; }
   left: 0;
   color: var(--ual-blue);
   font-weight: 700;
+}
+.certificate__skills li strong {
+  font-family: "Montserrat", sans-serif;
+  font-weight: 700;
+  color: var(--ual-blue);
+  letter-spacing: 0.04em;
+  margin-right: 4px;
 }
 
 .certificate__portfolio-label {
@@ -3097,12 +3088,13 @@ html { scroll-behavior: smooth; }
   opacity: 0.5;
 }
 .certificate__signature-name {
-  font-family: "Fraunces", serif;
-  font-variation-settings: "opsz" 24, "wght" 500;
-  font-style: italic;
-  font-size: 17px;
+  font-family: "Caveat", "Fraunces", cursive;
+  font-weight: 600;
+  font-style: normal;
+  font-size: 28px;
+  line-height: 1;
   color: var(--ual-dark);
-  margin-bottom: 3px;
+  margin-bottom: 6px;
 }
 
 .certificate__issuer {
@@ -3241,7 +3233,6 @@ html { scroll-behavior: smooth; }
   .certificate__wordmark { width: 200px !important; }
   .certificate__eyebrow { margin-bottom: 8px !important; font-size: 10px !important; }
   .certificate__name { font-size: 46px !important; margin: 0 0 10px !important; }
-  .certificate__shield { width: 38px !important; height: 48px !important; margin: 0 auto 10px !important; }
   .certificate__lead {
     font-size: 12.5px !important;
     line-height: 1.5 !important;
@@ -3277,7 +3268,7 @@ html { scroll-behavior: smooth; }
     gap: 24px !important;
   }
   .certificate__date { font-size: 15px !important; }
-  .certificate__signature-name { font-size: 14px !important; }
+  .certificate__signature-name { font-size: 22px !important; line-height: 1 !important; }
   .certificate__signature-line { margin-bottom: 4px !important; }
   .certificate__date-label, .certificate__signature-title { font-size: 8.5px !important; }
   .certificate__issuer { font-size: 8px !important; bottom: 6px !important; }

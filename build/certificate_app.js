@@ -19,7 +19,6 @@
     if (src && dst) dst.innerHTML = src.textContent;
   }
   injectSVG('ualWordmark', 'ualWordmarkSvg');
-  injectSVG('ualShield', 'ualShieldSvg');
 
   // ===========================================================
   // URL params
