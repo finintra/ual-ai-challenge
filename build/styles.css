@@ -2663,18 +2663,18 @@ html { scroll-behavior: smooth; }
 
 /* =========================================================
    THE CERTIFICATE
-   A4 portrait: 210mm × 297mm
+   A4 landscape: 297mm × 210mm
    ========================================================= */
 .certificate {
-  max-width: 800px;
+  max-width: 1100px;
   margin: 0 auto;
   background: var(--ual-paper);
   position: relative;
-  padding: 64px 56px 48px;
+  padding: 40px 64px 36px;
   box-shadow: 0 24px 64px rgba(34, 34, 34, 0.18);
   border-radius: 4px;
   /* Yellow border accent */
-  border-top: 16px solid var(--ual-yellow);
+  border-top: 14px solid var(--ual-yellow);
   border-bottom: 8px solid var(--ual-blue);
   overflow: hidden;
 }
@@ -2685,8 +2685,8 @@ html { scroll-behavior: smooth; }
   position: absolute;
   top: 0;
   right: 0;
-  width: 200px;
-  height: 200px;
+  width: 240px;
+  height: 240px;
   background: radial-gradient(circle at top right, rgba(255, 205, 52, 0.18) 0%, transparent 70%);
   pointer-events: none;
 }
@@ -2694,11 +2694,11 @@ html { scroll-behavior: smooth; }
 .certificate__header {
   display: flex;
   justify-content: center;
-  margin-bottom: 28px;
+  margin-bottom: 18px;
 }
 
 .certificate__wordmark {
-  width: 280px;
+  width: 240px;
   height: auto;
 }
 .certificate__wordmark svg {
@@ -2719,26 +2719,26 @@ html { scroll-behavior: smooth; }
   letter-spacing: 0.32em;
   text-transform: uppercase;
   color: var(--ual-blue);
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 
 .certificate__name {
   font-family: "Fraunces", "Times New Roman", serif;
   font-variation-settings: "opsz" 144, "wght" 700;
-  font-size: 56px;
-  line-height: 1.05;
+  font-size: 60px;
+  line-height: 1.0;
   text-align: center;
   color: var(--ual-dark);
-  margin: 0 0 28px;
+  margin: 0 0 16px;
   letter-spacing: -0.02em;
 }
 
 .certificate__shield {
   display: flex;
   justify-content: center;
-  margin: 0 auto 28px;
-  width: 56px;
-  height: 70px;
+  margin: 0 auto 18px;
+  width: 44px;
+  height: 56px;
 }
 .certificate__shield svg {
   width: 100%;
@@ -2751,16 +2751,16 @@ html { scroll-behavior: smooth; }
 
 .certificate__body {
   text-align: center;
-  max-width: 600px;
+  max-width: 880px;
   margin: 0 auto;
 }
 
 .certificate__lead {
   font-family: "PT Sans", sans-serif;
-  font-size: 16.5px;
-  line-height: 1.7;
+  font-size: 15px;
+  line-height: 1.55;
   color: var(--ual-dark);
-  margin: 0 0 22px;
+  margin: 0 0 18px;
 }
 .certificate__lead strong {
   font-weight: 700;
@@ -2769,19 +2769,22 @@ html { scroll-behavior: smooth; }
 
 .certificate__skills {
   list-style: none;
-  margin: 0 0 28px;
+  margin: 0 auto 18px;
   padding: 0;
   text-align: left;
-  display: inline-block;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 36px;
+  max-width: 760px;
 }
 .certificate__skills li {
   font-family: "PT Sans", sans-serif;
-  font-size: 14.5px;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 1.55;
   color: var(--ual-dark);
-  padding-left: 24px;
+  padding-left: 22px;
   position: relative;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .certificate__skills li::before {
   content: "✓";
@@ -2799,12 +2802,12 @@ html { scroll-behavior: smooth; }
   text-transform: uppercase;
   color: var(--ual-dark);
   opacity: 0.65;
-  margin: 0 0 6px;
+  margin: 0 0 4px;
 }
 .certificate__portfolio-url {
   display: inline-block;
   font-family: "Montserrat", sans-serif;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--ual-blue);
   text-decoration: underline;
@@ -2821,40 +2824,20 @@ html { scroll-behavior: smooth; }
 }
 
 .certificate__footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-top: 48px;
-  padding-top: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: end;
+  margin-top: 28px;
+  padding-top: 18px;
   border-top: 1px solid rgba(34, 34, 34, 0.12);
   gap: 32px;
-  flex-wrap: wrap;
 }
 
-.certificate__footer-block {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Дата зліва */
-.certificate__footer-block--date {
-  flex: 0 0 auto;
-}
-
-/* Дві підписи справа, у ряд */
-.certificate__signatures {
-  display: flex;
-  gap: 36px;
-  align-items: flex-end;
-  flex: 1 1 auto;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-}
-.certificate__signature {
+.certificate__footer-cell {
   display: flex;
   flex-direction: column;
   text-align: center;
-  min-width: 180px;
+  align-items: center;
 }
 
 .certificate__date-label,
@@ -2871,25 +2854,26 @@ html { scroll-behavior: smooth; }
 .certificate__date {
   font-family: "Fraunces", serif;
   font-variation-settings: "opsz" 36, "wght" 600;
-  font-size: 20px;
+  font-size: 18px;
   color: var(--ual-dark);
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .certificate__signature-line {
-  width: 100%;
+  width: 80%;
+  max-width: 220px;
   height: 1px;
   background: var(--ual-dark);
-  margin-bottom: 6px;
+  margin: 0 auto 6px;
   opacity: 0.5;
 }
 .certificate__signature-name {
   font-family: "Fraunces", serif;
   font-variation-settings: "opsz" 24, "wght" 500;
   font-style: italic;
-  font-size: 18px;
+  font-size: 17px;
   color: var(--ual-dark);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .certificate__issuer {
@@ -2909,50 +2893,47 @@ html { scroll-behavior: smooth; }
 
 /* =========================================================
    PRINT — Save as PDF
-   Calibrated to fit EXACTLY one A4 portrait page.
-   Nuclear approach: hide everything except .certificate,
-   force html/body to exact A4 dims, prevent any phantom page.
+   A4 landscape: 297mm wide × 210mm tall.
+   Nuclear approach: hide everything except .certificate.
    ========================================================= */
 @media print {
   @page {
-    size: A4 portrait;
+    size: A4 landscape;
     margin: 0;
   }
   html {
-    width: 210mm !important;
-    height: 297mm !important;
+    width: 297mm !important;
+    height: 210mm !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: hidden !important;
     background: #fff !important;
   }
   body, .cert-body {
-    width: 210mm !important;
-    height: 297mm !important;
+    width: 297mm !important;
+    height: 210mm !important;
     min-height: 0 !important;
-    max-height: 297mm !important;
+    max-height: 210mm !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: hidden !important;
     background: #fff !important;
   }
-  /* Nuclear: hide every child of body except the certificate itself.
-     This kills script/toolbar/state/anything that might cause overflow. */
+  /* Nuclear: hide every child of body except the certificate itself. */
   body > *:not(.certificate) { display: none !important; }
-  /* Belt + suspenders */
   .cert-toolbar, .cert-state, script { display: none !important; }
 
-  /* Certificate fills exactly one A4 page. */
+  /* Certificate fills exactly one A4 landscape page. */
   .certificate {
-    max-width: 210mm !important;
-    width: 210mm !important;
-    height: 297mm !important;
+    max-width: 297mm !important;
+    width: 297mm !important;
+    height: 210mm !important;
     min-height: 0 !important;
-    max-height: 297mm !important;
+    max-height: 210mm !important;
     margin: 0 !important;
     box-shadow: none !important;
     border-radius: 0 !important;
-    padding: 12mm 18mm 10mm !important;
+    padding: 10mm 22mm 8mm !important;
     overflow: hidden !important;
     page-break-after: avoid !important;
     page-break-inside: avoid !important;
@@ -2965,38 +2946,41 @@ html { scroll-behavior: smooth; }
     box-sizing: border-box !important;
   }
 
-  /* Tighten everything vertically */
-  .certificate__header { margin-bottom: 14px !important; }
-  .certificate__wordmark { width: 220px !important; }
-  .certificate__eyebrow { margin-bottom: 10px !important; }
-  .certificate__name { font-size: 42px !important; margin: 0 0 14px !important; }
-  .certificate__shield { width: 44px !important; height: 56px !important; margin: 0 auto 14px !important; }
+  /* Tighten everything for landscape */
+  .certificate__header { margin-bottom: 10px !important; }
+  .certificate__wordmark { width: 200px !important; }
+  .certificate__eyebrow { margin-bottom: 8px !important; font-size: 10px !important; }
+  .certificate__name { font-size: 46px !important; margin: 0 0 10px !important; }
+  .certificate__shield { width: 38px !important; height: 48px !important; margin: 0 auto 10px !important; }
   .certificate__lead {
-    font-size: 13.5px !important;
-    line-height: 1.55 !important;
-    margin: 0 0 14px !important;
-  }
-  .certificate__skills {
-    margin: 0 0 16px !important;
-  }
-  .certificate__skills li {
     font-size: 12.5px !important;
     line-height: 1.5 !important;
-    margin-bottom: 2px !important;
-    padding-left: 20px !important;
+    margin: 0 0 12px !important;
+    max-width: 600px !important;
   }
-  .certificate__portfolio-label { margin: 0 0 4px !important; }
-  .certificate__portfolio-url { font-size: 14px !important; }
+  .certificate__skills {
+    margin: 0 auto 12px !important;
+    gap: 0 28px !important;
+    max-width: 640px !important;
+  }
+  .certificate__skills li {
+    font-size: 11.5px !important;
+    line-height: 1.45 !important;
+    margin-bottom: 1px !important;
+    padding-left: 18px !important;
+  }
+  .certificate__portfolio-label { margin: 0 0 3px !important; font-size: 10px !important; }
+  .certificate__portfolio-url { font-size: 13px !important; }
   .certificate__footer {
-    margin-top: 18px !important;
-    padding-top: 14px !important;
+    margin-top: 14px !important;
+    padding-top: 10px !important;
     gap: 24px !important;
   }
-  .certificate__date { font-size: 16px !important; }
-  .certificate__signature-name { font-size: 15px !important; }
-  .certificate__signature { min-width: 150px !important; }
+  .certificate__date { font-size: 15px !important; }
+  .certificate__signature-name { font-size: 14px !important; }
   .certificate__signature-line { margin-bottom: 4px !important; }
-  .certificate__issuer { font-size: 8.5px !important; bottom: 8px !important; }
+  .certificate__date-label, .certificate__signature-title { font-size: 8.5px !important; }
+  .certificate__issuer { font-size: 8px !important; bottom: 6px !important; }
 
   /* Make sure UAL colors print correctly */
   .certificate, .certificate * {
@@ -3007,20 +2991,29 @@ html { scroll-behavior: smooth; }
 
 /* =========================================================
    CERTIFICATE PAGE — MOBILE
+   На мобільному landscape виглядав би занадто стиснуто —
+   тому fall back до колонкової вертикальної верстки.
    ========================================================= */
-@media (max-width: 720px) {
+@media (max-width: 920px) {
   .cert-body { padding: 24px 14px; }
   .certificate {
-    padding: 40px 24px 32px;
-    border-top-width: 12px;
-    border-bottom-width: 6px;
+    padding: 32px 22px 28px;
+    border-top-width: 10px;
+    border-bottom-width: 5px;
   }
   .certificate__name { font-size: 38px; }
-  .certificate__wordmark { width: 200px; }
-  .certificate__lead { font-size: 15px; }
-  .certificate__skills li { font-size: 13.5px; }
-  .certificate__footer { flex-direction: column; align-items: flex-start; gap: 18px; }
-  .certificate__footer-block--signature { text-align: left; }
-  .certificate__signature-line { margin-left: 0; }
+  .certificate__wordmark { width: 180px; }
+  .certificate__lead { font-size: 14px; line-height: 1.6; }
+  .certificate__skills {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+    gap: 0;
+  }
+  .certificate__skills li { font-size: 13px; line-height: 1.55; }
+  .certificate__footer {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    margin-top: 20px;
+  }
   .certificate__portfolio-url { font-size: 14px; }
 }
