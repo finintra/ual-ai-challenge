@@ -61,7 +61,11 @@
       );
       if (!res.ok) return null;
       const rows = await res.json();
-      return rows[0] || null;
+      const r = rows[0];
+      if (!r) return null;
+      // Compose full name: "Імʼя Прізвище". last_name added in schema v3.2.
+      const fullName = [r.name, r.last_name].filter(Boolean).join(' ').trim();
+      return Object.assign({}, r, { fullName: fullName || r.name });
     } catch (e) { return null; }
   }
 
@@ -138,7 +142,9 @@
       portfolioUrl = payload.personal_portfolio_url || payload.portfolio_master_url || null;
       dateIso = sub.updated_at || sub.submitted_at || null;
     }
-    renderCertificate(student.name, dateIso, portfolioUrl);
+    // Use full name (first + last) if available; fall back to just first name
+    const displayName = student.fullName || student.name;
+    renderCertificate(displayName, dateIso, portfolioUrl);
   })();
 
   // ===========================================================
