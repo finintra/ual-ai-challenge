@@ -413,12 +413,7 @@ html, body {
 }
 .day-row--locked .day-row__state { color: var(--text-faint); }
 .day-row--locked .day-row__num { color: var(--text-faint); }
-.day-row--locked .day-row__theme {
-  color: var(--text-faint);
-  text-decoration: line-through;
-  text-decoration-thickness: 1px;
-  text-decoration-color: var(--rule-strong);
-}
+.day-row--locked .day-row__theme { color: var(--text-faint); }
 
 /* State: default (unlocked, not current, not done) — make available rows
    feel actionable so the contrast with locked rows is unmistakable. */
