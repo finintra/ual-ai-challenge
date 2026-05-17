@@ -1225,6 +1225,56 @@ html, body {
   line-height: 1.4;
 }
 
+/* Inline table input (e.g. Назва + Можливий домен) */
+.checkin__table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--rule-strong);
+  border-radius: 6px;
+  background: var(--ink-elev);
+}
+.checkin__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+}
+.checkin__table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  border-bottom: 1px solid var(--rule-strong);
+  background: var(--ink-base);
+}
+.checkin__table td {
+  padding: 0;
+  border-top: 1px solid var(--rule-strong);
+  vertical-align: top;
+}
+.checkin__table tbody tr:first-child td { border-top: none; }
+.checkin__table td input {
+  width: 100%;
+  padding: 10px 12px;
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  outline: none;
+  border-radius: 0;
+}
+.checkin__table td input::placeholder { color: var(--text-faint); }
+.checkin__table td input:focus {
+  background: var(--ink-base);
+  box-shadow: inset 0 0 0 2px var(--coral);
+}
+.checkin__table td + td input {
+  border-left: 1px solid var(--rule-strong);
+}
+
 .checkin__actions {
   display: flex;
   flex-direction: column;
@@ -1949,6 +1999,36 @@ html, body {
   line-height: 1.55;
   white-space: pre-wrap;
 }
+.supervisor-card__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  background: var(--ink-elev);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.supervisor-card__table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  background: var(--ink-base);
+  border-bottom: 1px solid var(--rule);
+}
+.supervisor-card__table td {
+  padding: 8px 12px;
+  border-top: 1px solid var(--rule);
+  vertical-align: top;
+  word-break: break-word;
+}
+.supervisor-card__table td + td { border-left: 1px solid var(--rule); }
+.supervisor-card__table tbody tr:first-child td { border-top: none; }
+.supervisor-card__table a { color: var(--coral); word-break: break-all; }
 .supervisor-card__field-comment {
   grid-column: 2;
   display: flex;
@@ -2247,6 +2327,36 @@ html, body {
 .portfolio-day__value a:hover { text-decoration-color: var(--coral); }
 .portfolio__text { color: var(--text); font-size: 15px; line-height: 1.65; }
 .portfolio__missing { color: var(--text-faint); font-style: italic; }
+.portfolio__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+  background: var(--ink-elev);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.portfolio__table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  background: var(--ink-base);
+  border-bottom: 1px solid var(--rule);
+}
+.portfolio__table td {
+  padding: 8px 12px;
+  border-top: 1px solid var(--rule);
+  vertical-align: top;
+  word-break: break-word;
+}
+.portfolio__table td + td { border-left: 1px solid var(--rule); }
+.portfolio__table tbody tr:first-child td { border-top: none; }
+.portfolio__table a { color: var(--coral); word-break: break-all; }
 
 .portfolio__foot {
   margin-top: 80px;

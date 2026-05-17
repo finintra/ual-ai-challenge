@@ -1303,12 +1303,14 @@
     let fieldsHtml = '';
     if (schema && schema.fields) {
       schema.fields.forEach(f => {
-        const val = (row.payload || {})[f.key];
         const note = notes[f.key] || '';
+        const valueHtml = f.type === 'table'
+          ? renderTableValue(row.payload || {}, f)
+          : renderFieldValue((row.payload || {})[f.key], f.type);
         fieldsHtml += `
           <div class="supervisor-card__field">
             <div class="supervisor-card__field-label">${escapeHtml(f.label)}</div>
-            <div class="supervisor-card__field-value">${renderFieldValue(val, f.type)}</div>
+            <div class="supervisor-card__field-value">${valueHtml}</div>
             <div class="supervisor-card__field-comment">
               <label class="supervisor-card__comment-label">Коментар до поля</label>
               <textarea class="supervisor-card__comment" data-field-key="${escapeHtml(f.key)}" rows="2" placeholder="Що варто доопрацювати або похвалити...">${escapeHtml(note)}</textarea>
@@ -1385,6 +1387,42 @@
       return `<div class="supervisor-card__longtext">${escapeHtml(s).replace(/\n/g, '<br>')}</div>`;
     }
     return `<span>${escapeHtml(s)}</span>`;
+  }
+
+  // Render a "table"-type field by gathering all `${key}__${row}__${col}` entries.
+  function renderTableValue(payload, field) {
+    const cols = field.columns || [];
+    const prefix = field.key + '__';
+    // Bucket entries by row index
+    const buckets = {};
+    Object.entries(payload).forEach(([k, v]) => {
+      if (!k.startsWith(prefix)) return;
+      const rest = k.slice(prefix.length);
+      const m = rest.match(/^(\d+)__(.+)$/);
+      if (!m) return;
+      const [, idx, colKey] = m;
+      const val = (v == null ? '' : String(v)).trim();
+      if (!val) return;
+      buckets[idx] = buckets[idx] || {};
+      buckets[idx][colKey] = val;
+    });
+    const indices = Object.keys(buckets).map(Number).sort((a, b) => a - b);
+    if (!indices.length) {
+      return '<span class="supervisor-card__field-empty">— порожньо —</span>';
+    }
+    const head = cols.map(c => `<th>${escapeHtml(c.label)}</th>`).join('');
+    const body = indices.map(i => {
+      const cells = cols.map(c => {
+        const v = (buckets[i][c.key] || '').trim();
+        if (!v) return '<td></td>';
+        if (/^https?:\/\//i.test(v)) {
+          return `<td><a href="${escapeHtml(v)}" target="_blank" rel="noopener">${escapeHtml(v)}</a></td>`;
+        }
+        return `<td>${escapeHtml(v)}</td>`;
+      }).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+    return `<table class="supervisor-card__table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
   }
 
   async function saveReview(card, slot) {

@@ -297,6 +297,31 @@ def render_checkin_form(day_id, schema):
                 f'<textarea id="{day_id}-{key}" name="{key}" rows="{rows}" '
                 f'placeholder="{placeholder}" {min_attr} {required}></textarea>'
             )
+        elif f["type"] == "table":
+            cols = f.get("columns", [])
+            n_rows = f.get("rows", 5)
+            head_cells = "".join(
+                f'<th scope="col">{html_escape(c["label"])}</th>' for c in cols
+            )
+            body_rows = []
+            for i in range(n_rows):
+                cells = []
+                for c in cols:
+                    cell_name = f'{key}__{i}__{c["key"]}'
+                    cell_ph = html_escape(c.get("placeholder", ""))
+                    cells.append(
+                        f'<td><input type="text" name="{cell_name}" '
+                        f'placeholder="{cell_ph}" autocomplete="off"></td>'
+                    )
+                body_rows.append(f'<tr>{"".join(cells)}</tr>')
+            input_html = (
+                f'<div class="checkin__table-wrap">'
+                f'<table class="checkin__table" data-table-key="{key}">'
+                f'<thead><tr>{head_cells}</tr></thead>'
+                f'<tbody>{"".join(body_rows)}</tbody>'
+                f'</table>'
+                f'</div>'
+            )
         else:  # text
             input_html = (
                 f'<input type="text" id="{day_id}-{key}" name="{key}" '

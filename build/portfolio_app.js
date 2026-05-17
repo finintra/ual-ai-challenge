@@ -70,6 +70,39 @@
     return `<div class="portfolio__text">${escapeHtml(value).replace(/\n/g, '<br>')}</div>`;
   }
 
+  // Collect `${field.key}__${row}__${col}` cells, render as a small table.
+  function renderTableValue(payload, field) {
+    const cols = field.columns || [];
+    const prefix = field.key + '__';
+    const buckets = {};
+    Object.entries(payload).forEach(([k, v]) => {
+      if (!k.startsWith(prefix)) return;
+      const rest = k.slice(prefix.length);
+      const m = rest.match(/^(\d+)__(.+)$/);
+      if (!m) return;
+      const [, idx, colKey] = m;
+      const val = (v == null ? '' : String(v)).trim();
+      if (!val) return;
+      buckets[idx] = buckets[idx] || {};
+      buckets[idx][colKey] = val;
+    });
+    const indices = Object.keys(buckets).map(Number).sort((a, b) => a - b);
+    if (!indices.length) return '';
+    const head = cols.map(c => `<th>${escapeHtml(c.label)}</th>`).join('');
+    const body = indices.map(i => {
+      const cells = cols.map(c => {
+        const v = (buckets[i][c.key] || '').trim();
+        if (!v) return '<td></td>';
+        if (/^https?:\/\//i.test(v)) {
+          return `<td><a href="${escapeHtml(v)}" target="_blank" rel="noopener noreferrer">${escapeHtml(v)}</a></td>`;
+        }
+        return `<td>${escapeHtml(v)}</td>`;
+      }).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+    return `<table class="portfolio__table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+  }
+
   function renderDayCard(dayId, row) {
     const num = dayId.replace('day-', '').padStart(2, '0');
     const theme = dayTheme(dayId);
@@ -88,8 +121,19 @@
     }
 
     const payload = row.payload || {};
-    const fieldOrder = schema ? schema.fields.map(f => f.key) : Object.keys(payload);
-    const fieldsHtml = fieldOrder.map(key => {
+    const fields = schema ? schema.fields : Object.keys(payload).map(k => ({ key: k, type: 'text' }));
+    const fieldsHtml = fields.map(f => {
+      const key = f.key;
+      if (f.type === 'table') {
+        const html = renderTableValue(payload, f);
+        if (!html) return '';
+        return `
+          <div class="portfolio-day__field">
+            <div class="portfolio-day__label">${escapeHtml(fieldLabel(dayId, key))}</div>
+            <div class="portfolio-day__value">${html}</div>
+          </div>
+        `;
+      }
       if (!(key in payload)) return '';
       return `
         <div class="portfolio-day__field">

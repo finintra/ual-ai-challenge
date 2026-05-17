@@ -38,7 +38,10 @@ SUBMISSIONS = {
             {"key": "interview_doc_url", "label": "Транскрипт або конспект інтерв'ю з Анною (Google Doc)", "type": "url", "required": True, "help": "Документ із ключовими цитатами — лишаємо як посилання, бо обсяг великий"},
             {"key": "ual_brief", "label": "УАЛ-бриф (постав сюди весь текст брифу)", "type": "textarea", "required": True, "rows": 16, "min_length": 800, "help": "3-4 сторінки: проблема, аудиторія, цілі, обмеження, гіпотези"},
             {"key": "personal_brief", "label": "Особистий бриф (повний текст)", "type": "textarea", "required": True, "rows": 16, "min_length": 800},
-            {"key": "naming_options", "label": "Варіанти назв (3-5 шт) з перевіркою домена", "type": "textarea", "required": True, "rows": 8, "min_length": 200, "help": "Кожна назва — окремий рядок: «назва — обґрунтування — стан домену»"},
+            {"key": "naming_options", "label": "Варіанти назв (3-5 шт) з перевіркою домена", "type": "table", "required": False, "rows": 5, "columns": [
+                {"key": "name",   "label": "Назва",          "placeholder": "Brand name"},
+                {"key": "domain", "label": "Можливий домен", "placeholder": "example.com"},
+            ], "help": "Заповнюй стільки рядків, скільки потрібно. Пусті — пропускаються."},
             {"key": "research_tools_note", "label": "Нотатка «Claude Research vs Perplexity vs Gemini»", "type": "textarea", "required": True, "rows": 10, "min_length": 400, "help": "Власні висновки: що для чого, де хто сильніший, де слабше"},
             {"key": "open_questions", "label": "Список відкритих питань після інтерв'ю", "type": "textarea", "required": True, "rows": 8, "min_length": 120, "help": "Твоя дорожня карта подальшого ресерчу"},
             {"key": "biggest_insight", "label": "Найнесподіваніший інсайт дня (один абзац)", "type": "textarea", "required": True, "rows": 4, "min_length": 120},
