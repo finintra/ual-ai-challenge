@@ -337,6 +337,16 @@
     loginEl.hidden = true;
     pickerEl.hidden = true;
     appEl.hidden = false;
+
+    // Drop stale unlocked entries that no longer have a stored password —
+    // they survive in localStorage across logouts and were the source of
+    // "пароль для цієї сторінки не знайдено" errors. Day pages that user
+    // wants again can be reopened via the unlock panel (secret phrase).
+    unlockedDays = unlockedDays.filter(id =>
+      storedPasswords[id] || decryptedCache[id]
+    );
+    persistState();
+
     renderStudentBadge();
     renderNav();
     // Background refresh — keeps badge name in sync if admin renamed us
@@ -347,10 +357,21 @@
         localStorage.removeItem('student_slug');
       }
     });
-    // Navigate to first unlocked page (or page from URL hash)
+    navigate(pickInitialTarget());
+  }
+
+  function pickInitialTarget() {
+    // 1. URL hash if explicitly opened and unlocked
     const hash = location.hash.slice(1);
-    const target = hash && unlockedDays.includes(hash) ? hash : (unlockedDays[0] || PAGES[0].id);
-    navigate(target);
+    if (hash && unlockedDays.includes(hash)) return hash;
+    // 2. Highest unlocked day-N
+    const dayIds = unlockedDays
+      .filter(id => /^day-\d+$/.test(id))
+      .sort((a, b) => parseInt(b.split('-')[1], 10) - parseInt(a.split('-')[1], 10));
+    if (dayIds.length) return dayIds[0];
+    // 3. Overview by default
+    if (PAGES.find(p => p.id === 'overview')) return 'overview';
+    return PAGES[0].id;
   }
 
   function renderStudentBadge() {
@@ -532,7 +553,13 @@
     if (!html) {
       const password = storedPasswords[pageId];
       if (!password) {
-        contentEl.innerHTML = '<p>Помилка: пароль для цієї сторінки не знайдено. Спробуй вийти і увійти знову.</p>';
+        // Stale unlock from a past session — degrade to "locked" view so
+        // the user gets a friendly prompt instead of a cryptic error.
+        unlockedDays = unlockedDays.filter(x => x !== pageId);
+        persistState();
+        renderNav();
+        contentEl.innerHTML = '';
+        showUnlockPanel(pageId);
         return;
       }
       contentEl.innerHTML = '<p style="color:var(--text-muted)">Розкодовую...</p>';
@@ -541,7 +568,7 @@
         decryptedCache[pageId] = decrypted;
         html = decrypted;
       } else {
-        contentEl.innerHTML = '<p>Помилка декрипту. Спробуй вийти і увійти знову.</p>';
+        contentEl.innerHTML = '<p>Не вдалось розкодувати сторінку. Перелогінься і спробуй знову.</p>';
         return;
       }
     }
@@ -624,9 +651,9 @@
     }
     const prevDay = findPreviousDay(pageId);
     if (prevDay) {
-      hintEl.textContent = `Завершальний код для розблокування — у самому низу сторінки "${prevDay.label}", але тільки після того, як ти здаси здобутки попереднього дня у журнал.`;
+      hintEl.textContent = `Цю інформацію відкривати ще зарано. Секретне гасло для розблокування — у самому низу сторінки "${prevDay.label}", але тільки після того, як ти здаси здобутки попереднього дня у журнал.`;
     } else {
-      hintEl.textContent = 'Щоб відкрити, введи завершальний код з попереднього дня.';
+      hintEl.textContent = 'Цю інформацію відкривати ще зарано. Щоб відкрити, введи секретне гасло з попереднього дня.';
     }
   }
 

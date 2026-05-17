@@ -486,7 +486,7 @@ After scaffolding, show the file structure and ask which section to build first.
 
 ---
 
-## Завершальний код
+## Секретне гасло
 
 Ти налаштував **компас**. Твоя присутність у мережі є.
 

@@ -356,10 +356,13 @@ def encrypt_content(plaintext_str, password):
 
 
 def wrap_completion_section(html, day_id):
-    """Wrap the closing "Завершальний код" / "Ти досяг вершини" section in a
+    """Wrap the closing "Секретне гасло" / "Ти досяг вершини" section in a
     hidden div that JS unhides after a successful checkin submit.
+
+    The legacy "Завершальний код" heading is kept in the alternation for
+    backwards compatibility with any unmigrated day file.
     """
-    pattern = re.compile(r'(<h2>(?:Завершальний код|Ти досяг вершини)</h2>)')
+    pattern = re.compile(r'(<h2>(?:Секретне гасло|Завершальний код|Ти досяг вершини)</h2>)')
     match = pattern.search(html)
     if not match:
         return html

@@ -402,10 +402,35 @@ html, body {
 .day-row--current .day-row__num { color: var(--coral); }
 .day-row--current .day-row__theme { color: var(--text); font-variation-settings: "opsz" 16, "wght" 600; }
 
-/* State: locked */
+/* State: locked — dimmed, "ще зарано" affordance */
+.day-row--locked {
+  opacity: 0.55;
+  cursor: help;
+}
+.day-row--locked:hover {
+  background: transparent;
+  opacity: 0.75;
+}
 .day-row--locked .day-row__state { color: var(--text-faint); }
 .day-row--locked .day-row__num { color: var(--text-faint); }
-.day-row--locked .day-row__theme { color: var(--text-faint); }
+.day-row--locked .day-row__theme {
+  color: var(--text-faint);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--rule-strong);
+}
+
+/* State: default (unlocked, not current, not done) — make available rows
+   feel actionable so the contrast with locked rows is unmistakable. */
+.day-row:not(.day-row--locked):not(.day-row--current) .day-row__state {
+  color: var(--gold);
+}
+.day-row:not(.day-row--locked):not(.day-row--current) .day-row__theme {
+  color: var(--text);
+}
+.day-row:not(.day-row--locked):hover {
+  background: var(--ink-elev);
+}
 
 .logout {
   margin-top: 24px;
