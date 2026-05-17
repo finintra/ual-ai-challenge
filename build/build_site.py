@@ -60,7 +60,6 @@ PAGES = [
     ("day-5",      "day-5.md",      "День 5 · AI-медіа",     "day-5",      True,  "day-6"),
     ("day-6",      "day-6.md",      "День 6 · Автоматизація","day-6",      True,  "day-7"),
     ("day-7",      "day-7.md",      "День 7 · Пітч",         "day-7",      True,  "completion"),
-    ("journal",    "journal.md",    "Бортовий журнал",       "main",       False, None),
     ("supervisor", "supervisor.md", "Адміністрування",       "supervisor", True,  None),
 ]
 
@@ -492,6 +491,11 @@ def main():
     encrypted_map = {}
     pages_list = []
 
+    # Read journal template once — used both as overview preview and as
+    # downloadable file (dist/journal.md, written below in main()).
+    journal_src = CONTENT / "journal.md"
+    journal_text = journal_src.read_text(encoding="utf-8") if journal_src.exists() else ""
+
     print("Building encrypted content:")
     for page_id, fname, label, pw_key, locked, next_code_key in PAGES:
         path = CONTENT / fname
@@ -499,6 +503,9 @@ def main():
             print(f"  ⚠ missing: {fname} (skipping)")
             continue
         md_text = path.read_text(encoding="utf-8")
+        # Overview embeds the journal template as a collapsible preview.
+        if page_id == "overview" and journal_text:
+            md_text = md_text.replace("{{JOURNAL_PREVIEW}}", html_escape(journal_text))
         # Generic {{CODE:<key>}} substitution — used by supervisor.md and any
         # page that needs to render an arbitrary password from passwords.json.
         for k, v in passwords.items():
@@ -618,6 +625,12 @@ def main():
     # Static resources (PDFs, etc.) — copy resources/ → dist/resources/ as-is.
     # Linked from content via /resources/<filename>.
     copy_resources()
+
+    # Bортовий журнал — публічний шаблон для імпорту в Notion.
+    # Не шифрується (це порожній шаблон), доступний як download з overview.
+    if journal_text:
+        (DIST / "journal.md").write_text(journal_text, encoding="utf-8")
+        print(f"✓ Copied journal template → {DIST / 'journal.md'}")
 
 
 def copy_resources():

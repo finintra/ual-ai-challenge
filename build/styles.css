@@ -3121,6 +3121,63 @@ html { scroll-behavior: smooth; }
 }
 
 /* =========================================================
+   Journal download (overview page)
+   ========================================================= */
+.journal-download {
+  margin: 18px 0 24px;
+}
+.journal-download__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: var(--coral);
+  color: var(--on-coral);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+.journal-download__link:hover { background: var(--coral-deep); }
+
+.journal-preview {
+  margin: 20px 0 28px;
+  border: 1px solid var(--border-subtle, rgba(0,0,0,0.12));
+  border-radius: 6px;
+  padding: 0 16px;
+  background: var(--surface-soft, transparent);
+}
+.journal-preview > summary {
+  cursor: pointer;
+  padding: 14px 0;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  list-style: none;
+  user-select: none;
+}
+.journal-preview > summary::-webkit-details-marker { display: none; }
+.journal-preview > summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 10px;
+  color: var(--coral);
+  transition: transform 0.15s ease;
+}
+.journal-preview[open] > summary::before { transform: rotate(90deg); }
+.journal-preview[open] > summary { border-bottom: 1px solid var(--border-subtle, rgba(0,0,0,0.08)); }
+.journal-preview pre {
+  max-height: 420px;
+  overflow: auto;
+  font-size: 12.5px;
+  line-height: 1.55;
+  margin: 12px 0 16px;
+}
+
+/* =========================================================
    PRINT — Save as PDF
    A4 landscape: 297mm wide × 210mm tall.
    Nuclear approach: hide everything except .certificate.

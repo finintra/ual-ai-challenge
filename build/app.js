@@ -474,7 +474,7 @@
     navEl.innerHTML = '';
 
     // Partition pages into 3 groups:
-    //   start   — overview, journal (locked_by_default: false)
+    //   start   — overview (locked_by_default: false)
     //   days    — day-1 … day-7 (id starts with "day-")
     //   internal — supervisor (and anything else)
     const start = [];
@@ -992,9 +992,9 @@
   // ===========================================================
   // Return the live `main` password the supervisor has in this session,
   // or null if not available. Pulled from storedPasswords for any page
-  // whose pw_key in PAGES is 'main' (overview/day-1/journal).
+  // whose pw_key in PAGES is 'main' (overview/day-1).
   function getMainPasswordFromSession() {
-    const mainBackedPages = ['overview', 'day-1', 'journal'];
+    const mainBackedPages = ['overview', 'day-1'];
     for (const id of mainBackedPages) {
       if (storedPasswords[id]) return storedPasswords[id];
     }
