@@ -2703,6 +2703,8 @@ html { scroll-behavior: smooth; }
 /* =========================================================
    THE CERTIFICATE
    A4 landscape: 297mm × 210mm
+   Flex-column centered — щоб контент був завжди по центру
+   і вертикально, і горизонтально, без перекосів.
    ========================================================= */
 .certificate {
   max-width: 1100px;
@@ -2716,6 +2718,17 @@ html { scroll-behavior: smooth; }
   border-top: 14px solid var(--ual-yellow);
   border-bottom: 8px solid var(--ual-blue);
   overflow: hidden;
+  /* Flex centering — content always balanced */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Direct children стають flex items — щоб width: 100% спрацював для footer і body */
+.certificate > * {
+  width: 100%;
 }
 
 /* Decorative corner accent */
