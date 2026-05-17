@@ -67,21 +67,27 @@
   // or moving devices) and find every previously unlocked day open.
   // ===========================================================
   async function restoreProgressFromDB() {
-    if (!SUPABASE_READY || !studentSlug || isSupervisor) return;
+    if (!SUPABASE_READY) { console.info('[progress] supabase not configured'); return; }
+    if (!studentSlug || isSupervisor) return;
     const mainPwd = getMainPasswordFromSession();
-    if (!mainPwd) return;
+    if (!mainPwd) { console.warn('[progress] no main password in session — skip restore'); return; }
     try {
       const res = await fetch(
         SUPABASE_URL + '/rest/v1/students?slug=eq.' +
           encodeURIComponent(studentSlug) + '&select=progress_blob',
         { headers: supaHeaders() }
       );
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.warn('[progress] restore HTTP', res.status, await res.text());
+        return;
+      }
       const rows = await res.json();
-      if (!rows.length || !rows[0].progress_blob) return;
+      if (!rows.length) { console.info('[progress] no DB row for', studentSlug); return; }
+      if (!rows[0].progress_blob) { console.info('[progress] no blob saved yet'); return; }
       const json = await tryDecryptBlob(rows[0].progress_blob, mainPwd);
-      if (!json) return;
+      if (!json) { console.warn('[progress] decrypt failed (wrong main pwd?)'); return; }
       const codes = JSON.parse(json);
+      let restored = 0;
       for (const pid in codes) {
         if (!Object.prototype.hasOwnProperty.call(codes, pid)) continue;
         // Re-validate: a code might be stale if admin rotated passwords.
@@ -89,27 +95,47 @@
         if (!ok) continue;
         storedPasswords[pid] = codes[pid];
         if (!unlockedDays.includes(pid)) unlockedDays.push(pid);
+        restored++;
       }
       persistState();
-    } catch (e) { /* best-effort */ }
+      console.info('[progress] restored', restored, 'day(s) from DB');
+    } catch (e) { console.warn('[progress] restore error', e); }
   }
 
   async function syncProgressToDB() {
-    if (!SUPABASE_READY || !studentSlug || isSupervisor) return;
+    if (!SUPABASE_READY) return;
+    if (!studentSlug || isSupervisor) return;
     const mainPwd = getMainPasswordFromSession();
-    if (!mainPwd) return;
+    if (!mainPwd) { console.warn('[progress] no main pwd — skip sync'); return; }
+    // We may not have a DB row yet for this student (they exist only in
+    // embedded STUDENTS). Upsert handles both insert and merge.
+    const profile = STUDENTS.find(s => s.slug === studentSlug);
+    if (!profile) { console.warn('[progress] unknown studentSlug', studentSlug); return; }
     try {
       const blob = await encryptBlob(JSON.stringify(storedPasswords), mainPwd);
-      await fetch(
-        SUPABASE_URL + '/rest/v1/students?slug=eq.' +
-          encodeURIComponent(studentSlug),
+      const body = {
+        slug: studentSlug,
+        name: profile.name,
+        last_name: profile.last_name || '',
+        color: profile.color || '#FF5A3D',
+        progress_blob: blob,
+      };
+      const res = await fetch(
+        SUPABASE_URL + '/rest/v1/students',
         {
-          method: 'PATCH',
-          headers: supaHeaders({ 'Prefer': 'return=minimal' }),
-          body: JSON.stringify({ progress_blob: blob }),
+          method: 'POST',
+          headers: supaHeaders({
+            'Prefer': 'resolution=merge-duplicates,return=minimal',
+          }),
+          body: JSON.stringify(body),
         }
       );
-    } catch (e) { /* best-effort */ }
+      if (!res.ok) {
+        console.warn('[progress] sync HTTP', res.status, await res.text());
+      } else {
+        console.info('[progress] synced', Object.keys(storedPasswords).length, 'code(s)');
+      }
+    } catch (e) { console.warn('[progress] sync error', e); }
   }
 
   // ===========================================================
