@@ -87,11 +87,13 @@
 
   // Cache decrypted content per session
   const decryptedCache = {};
-  // Store password (key derivation material) per page in sessionStorage
+  // Store password (key derivation material) per page in localStorage so
+  // a participant only enters each day's code once — closing the tab no
+  // longer wipes progress. Cleared on explicit logout below.
   // Format: stored_passwords = {pageId: password}
   let storedPasswords = {};
   try {
-    storedPasswords = JSON.parse(sessionStorage.getItem('cp') || '{}');
+    storedPasswords = JSON.parse(localStorage.getItem('cp') || '{}');
   } catch(e) { storedPasswords = {}; }
 
   // Track unlocked days in localStorage (persistent across sessions)
@@ -402,7 +404,7 @@
   // Logout
   // ===========================================================
   document.getElementById('logoutBtn').addEventListener('click', () => {
-    sessionStorage.removeItem('cp');
+    localStorage.removeItem('cp');
     storedPasswords = {};
     Object.keys(decryptedCache).forEach(k => delete decryptedCache[k]);
     // We intentionally keep student_slug + unlocked + submitted in localStorage —
@@ -438,7 +440,7 @@
   });
 
   function persistState() {
-    sessionStorage.setItem('cp', JSON.stringify(storedPasswords));
+    localStorage.setItem('cp', JSON.stringify(storedPasswords));
     localStorage.setItem('unlocked', JSON.stringify(unlockedDays));
     localStorage.setItem('submitted', JSON.stringify(submittedDays));
     localStorage.setItem('reviewed', JSON.stringify(reviewedDays));
