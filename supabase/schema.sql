@@ -126,3 +126,15 @@ alter table public.students
 -- =========================================================
 alter table public.students
   add column if not exists last_name text not null default '';
+
+-- =========================================================
+-- v3.3: persistent quest progress per student
+-- progress_blob зберігає JSON {day-N: code, ...} зашифрований
+-- main-паролем учасника (PBKDF2-SHA256 200k iters → AES-GCM,
+-- той самий формат що unlock_blob). Сервер бачить тільки
+-- шифротекст; відновити коди може лише сесія з main-паролем.
+-- Дозволяє продовжити з усіма розблокованими днями навіть після
+-- очистки браузера або переходу на інший пристрій.
+-- =========================================================
+alter table public.students
+  add column if not exists progress_blob jsonb;

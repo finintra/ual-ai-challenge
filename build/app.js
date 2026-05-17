@@ -43,6 +43,7 @@
         last_name: r.last_name || '',
         color: r.color || '#FF5A3D',
         unlock_blob: r.unlock_blob || null,
+        progress_blob: r.progress_blob || null,
       }));
     } catch (e) {
       return null;
@@ -56,6 +57,59 @@
       renderStudentBadge();
     }
     return STUDENTS;
+  }
+
+  // ===========================================================
+  // Persistent quest progress (Supabase students.progress_blob)
+  // Stored as {day-N: code, ...} encrypted with the student's main
+  // password — only a session that already knows main can recover it.
+  // Lets a participant log back in (even after clearing browser data
+  // or moving devices) and find every previously unlocked day open.
+  // ===========================================================
+  async function restoreProgressFromDB() {
+    if (!SUPABASE_READY || !studentSlug || isSupervisor) return;
+    const mainPwd = getMainPasswordFromSession();
+    if (!mainPwd) return;
+    try {
+      const res = await fetch(
+        SUPABASE_URL + '/rest/v1/students?slug=eq.' +
+          encodeURIComponent(studentSlug) + '&select=progress_blob',
+        { headers: supaHeaders() }
+      );
+      if (!res.ok) return;
+      const rows = await res.json();
+      if (!rows.length || !rows[0].progress_blob) return;
+      const json = await tryDecryptBlob(rows[0].progress_blob, mainPwd);
+      if (!json) return;
+      const codes = JSON.parse(json);
+      for (const pid in codes) {
+        if (!Object.prototype.hasOwnProperty.call(codes, pid)) continue;
+        // Re-validate: a code might be stale if admin rotated passwords.
+        const ok = await tryDecrypt(pid, codes[pid]);
+        if (!ok) continue;
+        storedPasswords[pid] = codes[pid];
+        if (!unlockedDays.includes(pid)) unlockedDays.push(pid);
+      }
+      persistState();
+    } catch (e) { /* best-effort */ }
+  }
+
+  async function syncProgressToDB() {
+    if (!SUPABASE_READY || !studentSlug || isSupervisor) return;
+    const mainPwd = getMainPasswordFromSession();
+    if (!mainPwd) return;
+    try {
+      const blob = await encryptBlob(JSON.stringify(storedPasswords), mainPwd);
+      await fetch(
+        SUPABASE_URL + '/rest/v1/students?slug=eq.' +
+          encodeURIComponent(studentSlug),
+        {
+          method: 'PATCH',
+          headers: supaHeaders({ 'Prefer': 'return=minimal' }),
+          body: JSON.stringify({ progress_blob: blob }),
+        }
+      );
+    } catch (e) { /* best-effort */ }
   }
 
   // ===========================================================
@@ -342,21 +396,27 @@
     });
   }
 
-  function enterApp() {
+  async function enterApp() {
     loginEl.hidden = true;
     pickerEl.hidden = true;
     appEl.hidden = false;
 
-    // Drop stale unlocked entries that no longer have a stored password —
-    // they survive in localStorage across logouts and were the source of
-    // "пароль для цієї сторінки не знайдено" errors. Day pages that user
-    // wants again can be reopened via the unlock panel (secret phrase).
+    // Instant first paint from localStorage so the sidebar isn't empty
+    // while we wait for the DB roundtrip.
+    renderStudentBadge();
+    renderNav();
+
+    // Pull persistent progress from Supabase (codes encrypted with main
+    // password). On a fresh browser/device this is the only source of
+    // truth; on returning sessions it overlaps with localStorage.
+    await restoreProgressFromDB();
+
+    // Drop any unlock entries that still have no stored password (admin
+    // rotated codes, DB unreachable, etc.) — user re-enters the phrase.
     unlockedDays = unlockedDays.filter(id =>
       storedPasswords[id] || decryptedCache[id]
     );
     persistState();
-
-    renderStudentBadge();
     renderNav();
     // Background refresh — keeps badge name in sync if admin renamed us
     refreshStudents().then(() => {
@@ -732,6 +792,7 @@
         unlockedDays.push(currentPage);
       }
       persistState();
+      syncProgressToDB();
       renderNav();
       await renderPage(currentPage);
     } else {
