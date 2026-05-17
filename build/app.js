@@ -951,9 +951,6 @@
       const hasPwd = !!s.unlock_blob;
       const pwdLabel = hasPwd ? '✓ встановлений' : '— не встановлений';
       const pwdCls = hasPwd ? 'students-admin__pwd-on' : 'students-admin__pwd-off';
-      const clearBtn = hasPwd
-        ? '<button type="button" class="students-admin__btn students-admin__btn--danger" data-action="clear-pwd" title="Скинути пароль студента">×</button>'
-        : '';
       return `
       <tr data-slug="${escapeHtml(s.slug)}">
         <td>
@@ -968,18 +965,15 @@
           <code class="students-admin__slug">${escapeHtml(s.slug)}</code>
         </td>
         <td>
-          <input class="students-admin__input students-admin__color"
-                 data-field="color" type="color" value="${escapeHtml(s.color)}" />
-        </td>
-        <td>
           <span class="${pwdCls}">${pwdLabel}</span>
         </td>
         <td class="students-admin__actions">
-          <button type="button" class="students-admin__btn" data-action="save">Зберегти</button>
-          <button type="button" class="students-admin__btn" data-action="set-pwd">Пароль</button>
-          ${clearBtn}
-          <button type="button" class="students-admin__btn students-admin__btn--danger"
-                  data-action="delete">Видалити</button>
+          <button type="button" class="students-admin__icon" data-action="save"
+                  title="Зберегти зміни" aria-label="Зберегти">✓</button>
+          <button type="button" class="students-admin__icon" data-action="set-pwd"
+                  title="Встановити або змінити секретне гасло" aria-label="Пароль">🔑</button>
+          <button type="button" class="students-admin__icon students-admin__icon--danger"
+                  data-action="delete" title="Видалити студента" aria-label="Видалити">🗑</button>
         </td>
       </tr>
     `;
@@ -991,7 +985,7 @@
           Імʼя і Прізвище — окремі поля, бо такими і потраплять у сертифікат
           в кінці челенджу. Slug — внутрішній ідентифікатор для URL портфоліо
           (<code>portfolio.html?student=&lt;slug&gt;</code>) і submissions,
-          міняти не можна. <b>Пароль</b> — особистий код для логіну
+          міняти не можна. <b>Секретне гасло</b> — особистий код для логіну
           (зберігається лише як AES-blob, plaintext у Supabase не записується).
         </p>
       </div>
@@ -1001,12 +995,11 @@
             <th>Імʼя</th>
             <th>Прізвище</th>
             <th>Slug</th>
-            <th>Колір</th>
-            <th>Пароль</th>
+            <th>Гасло</th>
             <th></th>
           </tr>
         </thead>
-        <tbody>${rows || '<tr><td colspan="6" class="students-admin__empty">Поки нікого. Додай нижче.</td></tr>'}</tbody>
+        <tbody>${rows || '<tr><td colspan="5" class="students-admin__empty">Поки нікого. Додай нижче.</td></tr>'}</tbody>
       </table>
       <div class="students-admin__add">
         <h4 class="students-admin__subhead">Додати студента</h4>
@@ -1018,9 +1011,7 @@
           <input class="students-admin__input" data-add="slug" type="text"
                  placeholder="slug (latin, напр. oleksiy)" autocomplete="off" />
           <input class="students-admin__input" data-add="pwd" type="text"
-                 placeholder="пароль (опц.)" autocomplete="off" />
-          <input class="students-admin__input students-admin__color" data-add="color"
-                 type="color" value="#FF5A3D" />
+                 placeholder="секретне гасло (опц.)" autocomplete="off" />
           <button type="button" class="students-admin__btn students-admin__btn--primary"
                   data-add-submit>Додати</button>
         </div>
@@ -1058,33 +1049,23 @@
       tr.querySelector('[data-action="save"]').addEventListener('click', async () => {
         const name = tr.querySelector('[data-field="name"]').value.trim();
         const last_name = tr.querySelector('[data-field="last_name"]').value.trim();
-        const color = tr.querySelector('[data-field="color"]').value;
         if (!name) return;
         const btn = tr.querySelector('[data-action="save"]');
         btn.disabled = true; btn.textContent = '…';
-        const ok = await updateStudent(slug, { name, last_name, color });
-        btn.textContent = ok ? '✓' : 'помилка';
+        const ok = await updateStudent(slug, { name, last_name });
+        btn.textContent = ok ? '✓' : '⚠';
         await refreshStudents();
         renderStudentsAdmin(slot);
       });
       tr.querySelector('[data-action="set-pwd"]').addEventListener('click', async () => {
-        const pwd = prompt('Новий пароль для "' + slug + '" (мін. 4 символи). Студент логінитиметься цим кодом замість спільного.');
+        const pwd = prompt('Нове секретне гасло для "' + slug + '" (мін. 4 символи). Студент логінитиметься ним замість спільного.');
         if (pwd === null) return;
         if (pwd.length < 4) { alert('Мін. 4 символи'); return; }
         const btn = tr.querySelector('[data-action="set-pwd"]');
         btn.disabled = true; btn.textContent = '…';
         const ok = await setStudentPassword(slug, pwd);
-        btn.textContent = ok ? '✓' : 'помилка';
-        if (ok) alert('Пароль для "' + slug + '" встановлено. Передай його студенту — він зможе залогінитись цим кодом без picker-а.');
-        await refreshStudents();
-        renderStudentsAdmin(slot);
-      });
-      const clearBtn = tr.querySelector('[data-action="clear-pwd"]');
-      if (clearBtn) clearBtn.addEventListener('click', async () => {
-        if (!confirm('Скинути особистий пароль "' + slug + '"? Студент зможе залогінитись лише спільним main-паролем + picker.')) return;
-        clearBtn.disabled = true;
-        const ok = await updateStudent(slug, { unlock_blob: null });
-        if (!ok) { alert('Не вдалось'); clearBtn.disabled = false; return; }
+        btn.textContent = ok ? '✓' : '⚠';
+        if (ok) alert('Секретне гасло для "' + slug + '" встановлено. Передай його студенту.');
         await refreshStudents();
         renderStudentsAdmin(slot);
       });
@@ -1103,7 +1084,6 @@
         const name = slot.querySelector('[data-add="name"]').value.trim();
         const last_name = slot.querySelector('[data-add="last_name"]').value.trim();
         const slug = slot.querySelector('[data-add="slug"]').value.trim().toLowerCase();
-        const color = slot.querySelector('[data-add="color"]').value;
         const pwd = slot.querySelector('[data-add="pwd"]').value;
         const status = slot.querySelector('[data-role="add-status"]');
         const showStatus = (msg, ok) => {
@@ -1113,9 +1093,9 @@
         };
         if (!name || !slug) { showStatus('Заповни імʼя і slug', false); return; }
         if (!/^[a-z0-9-]+$/.test(slug)) { showStatus('Slug — лише latin, цифри і "-"', false); return; }
-        if (pwd && pwd.length < 4) { showStatus('Пароль — мін. 4 символи (або лиши порожнім)', false); return; }
+        if (pwd && pwd.length < 4) { showStatus('Секретне гасло — мін. 4 символи (або лиши порожнім)', false); return; }
         addBtn.disabled = true;
-        let rec = { slug, name, last_name, color };
+        let rec = { slug, name, last_name };
         if (pwd) {
           const mainPwd = getMainPasswordFromSession();
           if (!mainPwd) {
