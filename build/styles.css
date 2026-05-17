@@ -341,7 +341,7 @@ html, body {
 /* Day-index row (numbered, with state dot + theme) */
 .day-row {
   display: grid;
-  grid-template-columns: 16px auto 1fr;
+  grid-template-columns: 16px auto 1fr auto;
   gap: 12px;
   align-items: baseline;
   padding: 10px 12px 10px 8px;
@@ -353,6 +353,35 @@ html, body {
   color: var(--text);
   transition: background 0.15s, color 0.15s;
   position: relative;
+}
+
+/* Дві галочки справа: «Робота здана» + «Робота перевірена».
+   White circle by default, fills зеленим коли true. */
+.day-row__checks {
+  display: inline-flex;
+  gap: 6px;
+  align-self: center;
+}
+.day-row__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--rule-strong);
+  background: transparent;
+  color: transparent;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.day-row__check--on {
+  background: #2EA04A;
+  border-color: #2EA04A;
+  color: #fff;
 }
 
 .day-row:hover { background: var(--ink-elev); }

@@ -107,6 +107,13 @@
     submittedDays = JSON.parse(localStorage.getItem('submitted') || '[]');
   } catch(e) { submittedDays = []; }
 
+  // Дні, які керівник перевірив і прийняв (review_status === 'approved').
+  // Окрема галочка у сайдбарі.
+  let reviewedDays = [];
+  try {
+    reviewedDays = JSON.parse(localStorage.getItem('reviewed') || '[]');
+  } catch(e) { reviewedDays = []; }
+
   // Selected student identity (slug)
   let studentSlug = localStorage.getItem('student_slug') || null;
   // Supervisor login skips the picker (set during attemptLogin)
@@ -357,6 +364,8 @@
         localStorage.removeItem('student_slug');
       }
     });
+    // Підтягуємо актуальні статуси submission + review для галочок у сайдбарі
+    refreshSubmissionStatuses();
     navigate(pickInitialTarget());
   }
 
@@ -432,6 +441,27 @@
     sessionStorage.setItem('cp', JSON.stringify(storedPasswords));
     localStorage.setItem('unlocked', JSON.stringify(unlockedDays));
     localStorage.setItem('submitted', JSON.stringify(submittedDays));
+    localStorage.setItem('reviewed', JSON.stringify(reviewedDays));
+  }
+
+  // Підтягуємо актуальні статуси submission + review зі Supabase.
+  // Викликаємо після логіну і після кожного успішного submit.
+  async function refreshSubmissionStatuses() {
+    if (!SUPABASE_READY || !studentSlug || isSupervisor) return;
+    try {
+      const url = `${SUPABASE_URL}/rest/v1/submissions`
+        + `?student_slug=eq.${encodeURIComponent(studentSlug)}`
+        + `&select=day_id,review_status`;
+      const res = await fetch(url, {
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      });
+      if (!res.ok) return;
+      const rows = await res.json();
+      submittedDays = rows.map(r => r.day_id);
+      reviewedDays = rows.filter(r => r.review_status === 'approved').map(r => r.day_id);
+      persistState();
+      renderNav();
+    } catch (e) { /* ignore — best-effort */ }
   }
 
   // ===========================================================
@@ -517,10 +547,22 @@
     else if (isSubmitted) stateGlyph = '✓';
     else stateGlyph = '●';
 
+    const isReviewed = reviewedDays.includes(p.id);
+    const submitClass = isSubmitted ? 'day-row__check--on' : '';
+    const reviewClass = isReviewed ? 'day-row__check--on' : '';
+    // Галочки не показуємо керівнику — це індикатори студентського статусу.
+    const checksHtml = isSupervisor ? '' : `
+      <span class="day-row__checks">
+        <span class="day-row__check ${submitClass}" title="Робота здана" aria-label="Робота здана">✓</span>
+        <span class="day-row__check ${reviewClass}" title="Робота перевірена" aria-label="Робота перевірена">✓</span>
+      </span>
+    `;
+
     btn.innerHTML = `
       <span class="day-row__state">${stateGlyph}</span>
       <span class="day-row__num">DAY ${escapeHtml(num)}</span>
       <span class="day-row__theme">${escapeHtml(theme)}</span>
+      ${checksHtml}
     `;
     btn.addEventListener('click', () => navigate(p.id));
     return btn;
@@ -765,6 +807,8 @@
         revealCompletion(dayId);
         lockCheckinForm(form, '✓ Записано у журнал. Можеш повернутись пізніше і доповнити — натисни «Зберегти ще раз».');
         renderNav();
+        // Підтягуємо свіжий статус (зокрема review_status) зі Supabase
+        refreshSubmissionStatuses();
         // Smooth scroll to the just-revealed completion block
         const completion = contentEl.querySelector(`.completion-code[data-day="${dayId}"]`);
         if (completion) completion.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -839,11 +883,21 @@
         if (input) input.value = v;
       });
       renderReviewFeedback(form, row);
+      let navDirty = false;
       if (!submittedDays.includes(dayId)) {
         submittedDays.push(dayId);
-        persistState();
-        renderNav();
+        navDirty = true;
       }
+      const isApproved = row.review_status === 'approved';
+      const wasApproved = reviewedDays.includes(dayId);
+      if (isApproved && !wasApproved) {
+        reviewedDays.push(dayId);
+        navDirty = true;
+      } else if (!isApproved && wasApproved) {
+        reviewedDays = reviewedDays.filter(d => d !== dayId);
+        navDirty = true;
+      }
+      if (navDirty) { persistState(); renderNav(); }
       if (autoReveal) {
         revealCompletion(dayId);
         lockCheckinForm(form, '✓ Цей день вже здано раніше. Поля заповнено з журналу.');
