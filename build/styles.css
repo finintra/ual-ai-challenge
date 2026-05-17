@@ -3126,7 +3126,7 @@ html { scroll-behavior: smooth; }
 .journal-download {
   margin: 18px 0 24px;
 }
-.journal-download__link {
+.journal-download a.journal-download__link {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -3140,7 +3140,11 @@ html { scroll-behavior: smooth; }
   border-radius: 6px;
   transition: background 0.15s ease;
 }
-.journal-download__link:hover { background: var(--coral-deep); }
+.journal-download a.journal-download__link:hover {
+  background: var(--coral-deep);
+  color: var(--on-coral);
+  text-decoration: none;
+}
 
 .journal-preview {
   margin: 20px 0 28px;
