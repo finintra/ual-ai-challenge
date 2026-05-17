@@ -117,3 +117,12 @@ create policy "anon delete" on public.students for delete using (true);
 -- =========================================================
 alter table public.students
   add column if not exists unlock_blob jsonb;
+
+-- =========================================================
+-- v3.2: окреме поле прізвища
+-- `name` — імʼя для звертання у UI. `last_name` — для сертифіката
+-- та публічного портфоліо. Сумісність: старі рядки отримують
+-- порожній рядок як default.
+-- =========================================================
+alter table public.students
+  add column if not exists last_name text not null default '';

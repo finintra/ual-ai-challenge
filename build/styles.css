@@ -1364,6 +1364,7 @@ html, body {
   border-collapse: collapse;
   margin: 0 0 24px 0;
   font-size: 14px;
+  table-layout: fixed;
 }
 .students-admin__table th,
 .students-admin__table td {
@@ -1371,7 +1372,21 @@ html, body {
   padding: 10px 10px;
   border-bottom: 1px solid var(--rule);
   vertical-align: middle;
+  word-break: break-word;
 }
+/* Column widths: name, last_name, slug, color, pwd-status, actions */
+.students-admin__table th:nth-child(1),
+.students-admin__table td:nth-child(1) { width: 19%; }
+.students-admin__table th:nth-child(2),
+.students-admin__table td:nth-child(2) { width: 19%; }
+.students-admin__table th:nth-child(3),
+.students-admin__table td:nth-child(3) { width: 13%; }
+.students-admin__table th:nth-child(4),
+.students-admin__table td:nth-child(4) { width: 60px; }
+.students-admin__table th:nth-child(5),
+.students-admin__table td:nth-child(5) { width: 14%; }
+.students-admin__table th:nth-child(6),
+.students-admin__table td:nth-child(6) { width: auto; }
 .students-admin__table th {
   font-family: var(--font-mono);
   font-size: 10.5px;
@@ -1479,7 +1494,7 @@ html, body {
 
 .students-admin__add-row {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1.1fr 60px auto;
+  grid-template-columns: 1fr 1fr 0.9fr 1fr 60px auto;
   gap: 10px;
   align-items: center;
 }

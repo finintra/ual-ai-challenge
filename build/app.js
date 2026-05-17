@@ -40,6 +40,7 @@
       return rows.map(r => ({
         slug: r.slug,
         name: r.name,
+        last_name: r.last_name || '',
         color: r.color || '#FF5A3D',
         unlock_blob: r.unlock_blob || null,
       }));
@@ -316,9 +317,10 @@
       const btn = document.createElement('button');
       btn.className = 'picker__option';
       btn.style.setProperty('--accent', s.color);
+      const fullName = s.last_name ? (s.name + ' ' + s.last_name) : s.name;
       btn.innerHTML = `
         <span class="picker__option-mono">Це я</span>
-        <span class="picker__option-name">${escapeHtml(s.name)}</span>
+        <span class="picker__option-name">${escapeHtml(fullName)}</span>
         <span class="picker__option-slug">${escapeHtml(s.slug)}</span>
       `;
       btn.addEventListener('click', () => {
@@ -363,7 +365,7 @@
     if (!s) { badge.hidden = true; return; }
     badge.hidden = false;
     badge.style.setProperty('--accent', s.color);
-    badge.innerHTML = `<span class="student-badge__mono">Підписано як</span><span class="student-badge__name">${escapeHtml(s.name)}</span>`;
+    badge.innerHTML = `<span class="student-badge__mono">Привіт</span><span class="student-badge__name">${escapeHtml(s.name)}</span>`;
   }
 
   // ===========================================================
@@ -929,7 +931,11 @@
       <tr data-slug="${escapeHtml(s.slug)}">
         <td>
           <input class="students-admin__input" data-field="name"
-                 type="text" value="${escapeHtml(s.name)}" />
+                 type="text" value="${escapeHtml(s.name)}" placeholder="Імʼя" />
+        </td>
+        <td>
+          <input class="students-admin__input" data-field="last_name"
+                 type="text" value="${escapeHtml(s.last_name || '')}" placeholder="Прізвище" />
         </td>
         <td>
           <code class="students-admin__slug">${escapeHtml(s.slug)}</code>
@@ -955,34 +961,37 @@
       <div class="students-admin__head">
         <h3 class="students-admin__title">Студенти челенджу</h3>
         <p class="students-admin__intro">
-          Додавай, перейменовуй, керуй паролями. Slug — внутрішній ідентифікатор
-          для URL портфоліо (<code>portfolio.html?student=&lt;slug&gt;</code>) і
-          submissions, міняти не можна. <b>Пароль</b> — особистий код студента
-          для логіну (зберігається лише як хеш + AES-blob, plaintext у Supabase
-          не записується).
+          Імʼя і Прізвище — окремі поля, бо такими і потраплять у сертифікат
+          в кінці челенджу. Slug — внутрішній ідентифікатор для URL портфоліо
+          (<code>portfolio.html?student=&lt;slug&gt;</code>) і submissions,
+          міняти не можна. <b>Пароль</b> — особистий код для логіну
+          (зберігається лише як AES-blob, plaintext у Supabase не записується).
         </p>
       </div>
       <table class="students-admin__table">
         <thead>
           <tr>
-            <th>Ім'я</th>
+            <th>Імʼя</th>
+            <th>Прізвище</th>
             <th>Slug</th>
             <th>Колір</th>
             <th>Пароль</th>
             <th></th>
           </tr>
         </thead>
-        <tbody>${rows || '<tr><td colspan="5" class="students-admin__empty">Поки нікого. Додай нижче.</td></tr>'}</tbody>
+        <tbody>${rows || '<tr><td colspan="6" class="students-admin__empty">Поки нікого. Додай нижче.</td></tr>'}</tbody>
       </table>
       <div class="students-admin__add">
         <h4 class="students-admin__subhead">Додати студента</h4>
         <div class="students-admin__add-row">
           <input class="students-admin__input" data-add="name" type="text"
-                 placeholder="Ім'я (напр. Олексій)" />
+                 placeholder="Імʼя (напр. Олексій)" />
+          <input class="students-admin__input" data-add="last_name" type="text"
+                 placeholder="Прізвище (напр. Іваненко)" />
           <input class="students-admin__input" data-add="slug" type="text"
                  placeholder="slug (latin, напр. oleksiy)" autocomplete="off" />
           <input class="students-admin__input" data-add="pwd" type="text"
-                 placeholder="пароль (опціонально)" autocomplete="off" />
+                 placeholder="пароль (опц.)" autocomplete="off" />
           <input class="students-admin__input students-admin__color" data-add="color"
                  type="color" value="#FF5A3D" />
           <button type="button" class="students-admin__btn students-admin__btn--primary"
@@ -1021,11 +1030,12 @@
       const slug = tr.dataset.slug;
       tr.querySelector('[data-action="save"]').addEventListener('click', async () => {
         const name = tr.querySelector('[data-field="name"]').value.trim();
+        const last_name = tr.querySelector('[data-field="last_name"]').value.trim();
         const color = tr.querySelector('[data-field="color"]').value;
         if (!name) return;
         const btn = tr.querySelector('[data-action="save"]');
         btn.disabled = true; btn.textContent = '…';
-        const ok = await updateStudent(slug, { name, color });
+        const ok = await updateStudent(slug, { name, last_name, color });
         btn.textContent = ok ? '✓' : 'помилка';
         await refreshStudents();
         renderStudentsAdmin(slot);
@@ -1064,6 +1074,7 @@
     if (addBtn) {
       addBtn.addEventListener('click', async () => {
         const name = slot.querySelector('[data-add="name"]').value.trim();
+        const last_name = slot.querySelector('[data-add="last_name"]').value.trim();
         const slug = slot.querySelector('[data-add="slug"]').value.trim().toLowerCase();
         const color = slot.querySelector('[data-add="color"]').value;
         const pwd = slot.querySelector('[data-add="pwd"]').value;
@@ -1073,11 +1084,11 @@
           status.hidden = false;
           status.dataset.ok = ok ? '1' : '0';
         };
-        if (!name || !slug) { showStatus('Заповни ім\'я і slug', false); return; }
+        if (!name || !slug) { showStatus('Заповни імʼя і slug', false); return; }
         if (!/^[a-z0-9-]+$/.test(slug)) { showStatus('Slug — лише latin, цифри і "-"', false); return; }
         if (pwd && pwd.length < 4) { showStatus('Пароль — мін. 4 символи (або лиши порожнім)', false); return; }
         addBtn.disabled = true;
-        let rec = { slug, name, color };
+        let rec = { slug, name, last_name, color };
         if (pwd) {
           const mainPwd = getMainPasswordFromSession();
           if (!mainPwd) {
