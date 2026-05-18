@@ -221,6 +221,7 @@ Lighthouse — вбудований у Chrome аудит сайту. Дасть 
 ### Арсенал
 - Lovable (lovable.dev) — безкоштовний тариф, є щоденний ліміт
 - Claude Code (встановлюється через npm) — підписку готує керівник практики
+- **Скіл `frontend-design` для Claude Code** (npx skills add github.com/anthropics/skills --skill frontend-design) — змушує Claude спершу визначитись зі стилем, типографікою і візуальним напрямком, і тільки потім писати код. Стандартний антидот проти AI-slop макетів з Inter і фіолетовими градієнтами
 - Jules (jules.google) — безкоштовно, потрібен GitHub-акаунт. **Геозаблокований в Україні — потрібен VPN, як для Pomelli у Дні 2 (ClearVPN з пресетом США)**
 - Vercel (vercel.com) — деплой
 - GitHub (github.com) — для збереження коду
@@ -343,6 +344,20 @@ File structure I want:
 Mobile-first responsive, semantic HTML, alt-tags, good contrast for accessibility.
 After scaffolding, show the file structure and ask which section to build first.
 ```
+
+**Скіл `frontend-design` для Claude Code (рекомендовано перед першим промптом)**
+
+Дефолтний Claude у вебі тяжіє до тих самих макетів: Inter як шрифт, фіолетові градієнти, generic-картки, заокруглені кнопки. Це і є той «AI slop» вигляд, від якого аудиторія втомилася і впізнає його за версту.
+
+Anthropic виклав окремий скіл `frontend-design`, який перевизначає робочий цикл. Claude більше не кидається відразу писати код — спершу визначається зі стилем, візуальним напрямком, типографікою, кольоровим настроєм, і лише потім збирає проєкт. На виході — готові HTML, CSS, JS, React або Vue. Не демки, а прод-код.
+
+Встановлення (одноразово, у твоїй папці `my-site`):
+
+```bash
+npx skills add github.com/anthropics/skills --skill frontend-design
+```
+
+Після цього скіл доступний у всіх сесіях Claude Code у цій папці. Перший промпт сьогодні давай уже з ним — попроси Claude спочатку запропонувати 2-3 візуальні напрямки (типографічна пара, палітра, тон композиції) і лише після твого вибору переходити до коду. Це додає 5-10 хв на початку, але економить 1-2 години переробок «зроби менш AI-шним».
 
 **Шаблон промпта для Claude Code: ітерація**
 ```
