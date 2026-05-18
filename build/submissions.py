@@ -88,6 +88,7 @@ SUBMISSIONS = {
             {"key": "ual_posts_drive_url", "label": "Drive з 10-14 готовими постами — УАЛ", "type": "url", "required": True},
             {"key": "personal_posts_drive_url", "label": "Drive з 10-14 готовими постами — особисте", "type": "url", "required": True},
             {"key": "adaptation_note", "label": "Один меседж — три платформи (приклад адаптації)", "type": "textarea", "required": True, "rows": 12, "min_length": 400, "help": "Один інсайт → пост у LinkedIn, IG-кепшн, TikTok-скрипт"},
+            {"key": "content_agent_url", "label": "Контент-агент у Claude Code (опціонально)", "type": "url", "required": False, "help": "Drive з папкою агента: CLAUDE.md, brand.md (без ключів), 1-2 приклади згенерованих пакетів. Якщо зібрав факультатив — додай тут"},
             {"key": "biggest_insight", "label": "Де AI-копірайт «горить» і що рятує? (абзац)", "type": "textarea", "required": True, "rows": 4, "min_length": 120},
         ],
     },
